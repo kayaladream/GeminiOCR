@@ -548,7 +548,6 @@ function App() {
           </svg>
         </a>
         <h1>高精度OCR识别</h1>
-        <p>智能识别多国语言及手写字体，上传或拖拽图片即刻识别文字内容</p>
       </header>
 
       <main className={images.length > 0 ? 'has-content' : ''}>
