@@ -62,8 +62,8 @@ body::before {
 /* 标题样式优化 */
 header {
   text-align: center;
-  margin-bottom: 4rem;
-  padding: 2rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
   position: relative;
 }
 
@@ -84,7 +84,6 @@ header p {
   font-weight: 400;
   max-width: 600px;
   margin: 0 auto;
-  margin-bottom: 0.1rem; /* 添加 margin-bottom，调整与下方内容的间距 */
 }
 
 .upload-container {
