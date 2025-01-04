@@ -63,7 +63,7 @@ body::before {
 header {
   text-align: center;
   margin-bottom: 1rem;
-  padding: 0.1rem;
+  padding: 0rem;
   position: relative;
 }
 
@@ -1342,8 +1342,8 @@ main.has-content {
 /* 添加 GitHub 图标样式 */
 .github-link {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 0.5rem;
+  right: 0.5rem;
   z-index: 1000;
   transition: transform 0.3s ease;
 }
