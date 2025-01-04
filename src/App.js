@@ -158,13 +158,11 @@ function App() {
             const chunkText = chunk.text();
             fullText += chunkText;
 
-            // 确保每个分段之间有两个换行符
-            const formattedText = fullText.replace(/\n+/g, '\n\n');
-
-            setStreamingText(formattedText);
+            // 直接使用 Gemini 返回的文本，保留其中的换行符
+            setStreamingText(fullText);
             setResults(prevResults => {
               const newResults = [...prevResults];
-              newResults[index] = formattedText;
+              newResults[index] = fullText;
               return newResults;
             });
           }
@@ -204,13 +202,11 @@ function App() {
                   const data = JSON.parse(line.slice(6));
                   fullText += data.text;
 
-                  // 确保每个分段之间有两个换行符
-                  const formattedText = fullText.replace(/\n+/g, '\n\n');
-
-                  setStreamingText(formattedText);
+                  // 直接使用 Gemini 返回的文本，保留其中的换行符
+                  setStreamingText(fullText);
                   setResults(prevResults => {
                     const newResults = [...prevResults];
-                    newResults[index] = formattedText;
+                    newResults[index] = fullText;
                     return newResults;
                   });
                 } catch (e) {
@@ -535,8 +531,7 @@ function App() {
         .replace(/\*(.*?)\*/g, '$1')     // 去除斜体符号 *
         .replace(/`(.*?)`/g, '$1')       // 去除行内代码符号 `
         .replace(/~~(.*?)~~/g, '$1')     // 去除删除线符号 ~~
-        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 去除链接符号 [text](url)
-        .replace(/\n+/g, '\n'); // 将多个换行符替换为单个换行符
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1'); // 去除链接符号 [text](url)
 
       // 复制纯文本到剪贴板
       navigator.clipboard.writeText(plainText)
