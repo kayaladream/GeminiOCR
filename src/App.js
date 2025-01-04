@@ -534,7 +534,8 @@ function App() {
         .replace(/\*(.*?)\*/g, '$1')     // 去除斜体符号 *
         .replace(/`(.*?)`/g, '$1')       // 去除行内代码符号 `
         .replace(/~~(.*?)~~/g, '$1')     // 去除删除线符号 ~~
-        .replace(/\[(.*?)\]\((.*?)\)/g, '$1'); // 去除链接符号 [text](url)
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 去除链接符号 [text](url)
+        .replace(/\n+/g, '\n'); // 将多个换行符替换为单个换行符
 
       // 复制纯文本到剪贴板
       navigator.clipboard.writeText(plainText)
