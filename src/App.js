@@ -144,12 +144,11 @@ function App() {
             "   - 正确输出：'当 $n$ 为偶数时'" +
             "   - 错误输出：'当 Tn 为偶数时' 或 '当 @n@ 为偶数时'" +
             "3. 文字识别要求：" +
-            "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，纠修后的词要用“加粗”方式显示文本" +
+            "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，修正后的词要用“加粗”方式显示文本" +
             "   - 保持语句通顺和语义连贯性" +
             "   - 专业术语和特定名词需要准确识别" +
             "4. 分段要求：" +
-            "   - 如果原图片中两行之间的间隙明显较大，用三个换行符分隔（即 `\n\n\n`）" +
-            "   - 如果间隙较小，用两个换行符分隔（即 `\n\n`）" +
+            "   - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果" +
             "5. 直接输出内容，不要添加任何说明",
             imagePart
           ]);
@@ -158,11 +157,13 @@ function App() {
             const chunkText = chunk.text();
             fullText += chunkText;
 
-            // 直接使用 Gemini 返回的文本，保留其中的换行符
-            setStreamingText(fullText);
+            // 确保每个分段之间有两个换行符
+            const formattedText = fullText.replace(/\n+/g, '\n\n');
+
+            setStreamingText(formattedText);
             setResults(prevResults => {
               const newResults = [...prevResults];
-              newResults[index] = fullText;
+              newResults[index] = formattedText;
               return newResults;
             });
           }
@@ -202,11 +203,13 @@ function App() {
                   const data = JSON.parse(line.slice(6));
                   fullText += data.text;
 
-                  // 直接使用 Gemini 返回的文本，保留其中的换行符
-                  setStreamingText(fullText);
+                  // 确保每个分段之间有两个换行符
+                  const formattedText = fullText.replace(/\n+/g, '\n\n');
+
+                  setStreamingText(formattedText);
                   setResults(prevResults => {
                     const newResults = [...prevResults];
-                    newResults[index] = fullText;
+                    newResults[index] = formattedText;
                     return newResults;
                   });
                 } catch (e) {
@@ -531,7 +534,8 @@ function App() {
         .replace(/\*(.*?)\*/g, '$1')     // 去除斜体符号 *
         .replace(/`(.*?)`/g, '$1')       // 去除行内代码符号 `
         .replace(/~~(.*?)~~/g, '$1')     // 去除删除线符号 ~~
-        .replace(/\[(.*?)\]\((.*?)\)/g, '$1'); // 去除链接符号 [text](url)
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 去除链接符号 [text](url)
+        .replace(/\n+/g, '\n'); // 将多个换行符替换为单个换行符
 
       // 复制纯文本到剪贴板
       navigator.clipboard.writeText(plainText)
