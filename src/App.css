@@ -64,7 +64,7 @@ header {
   text-align: center;
   margin-bottom: 1rem;
   padding: 0.5rem; /* 保留其他方向的内边距 */
-  padding-top: 0.25rem; /* 单独设置顶部内边距为 0.25rem */
+  padding-top: 0.1rem; /* 单独设置顶部内边距为 0.25rem */
   position: relative;
 }
 
