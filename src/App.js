@@ -145,20 +145,25 @@ function App() {
             "   - 错误输出：'当 Tn 为偶数时' 或 '当 @n@ 为偶数时'" +
             "3. 文字识别要求：" +
             "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，纠修后的词要用“加粗”方式显示文本" +
-            "   - 按原图片的段落结构排版" +
             "   - 保持语句通顺和语义连贯性" +
             "   - 专业术语和特定名词需要准确识别" +
-            "4. 直接输出内容，不要添加任何说明",
+            "4. 分段要求：" +
+            "   - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果" +
+            "5. 直接输出内容，不要添加任何说明",
             imagePart
           ]);
 
           for await (const chunk of result.stream) {
             const chunkText = chunk.text();
             fullText += chunkText;
-            setStreamingText(fullText);
+
+            // 确保每个分段之间有两个换行符
+            const formattedText = fullText.replace(/\n+/g, '\n\n');
+
+            setStreamingText(formattedText);
             setResults(prevResults => {
               const newResults = [...prevResults];
-              newResults[index] = fullText;
+              newResults[index] = formattedText;
               return newResults;
             });
           }
@@ -197,10 +202,14 @@ function App() {
                 try {
                   const data = JSON.parse(line.slice(6));
                   fullText += data.text;
-                  setStreamingText(fullText);
+
+                  // 确保每个分段之间有两个换行符
+                  const formattedText = fullText.replace(/\n+/g, '\n\n');
+
+                  setStreamingText(formattedText);
                   setResults(prevResults => {
                     const newResults = [...prevResults];
-                    newResults[index] = fullText;
+                    newResults[index] = formattedText;
                     return newResults;
                   });
                 } catch (e) {
@@ -535,7 +544,7 @@ function App() {
           const originalText = button.textContent;
           button.textContent = '已复制';
           button.classList.add('copied');
-          
+
           setTimeout(() => {
             button.textContent = originalText;
             button.classList.remove('copied');
