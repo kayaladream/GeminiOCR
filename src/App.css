@@ -84,6 +84,7 @@ header p {
   font-weight: 400;
   max-width: 600px;
   margin: 0 auto;
+  margin-bottom: 1rem; /* 添加 margin-bottom，调整与下方内容的间距 */
 }
 
 .upload-container {
