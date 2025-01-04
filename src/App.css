@@ -62,8 +62,8 @@ body::before {
 /* 标题样式优化 */
 header {
   text-align: center;
-  margin-bottom: 2rem;
-  padding: 1rem;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
   position: relative;
 }
 
@@ -74,7 +74,7 @@ header h1 {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   letter-spacing: -0.5px;
 }
 
