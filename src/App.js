@@ -2,6 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import './App.css';
 
 // 初始化 Gemini API
@@ -141,7 +144,7 @@ function App() {
             "   - 正确输出：'当 $n$ 为偶数时'" +
             "   - 错误输出：'当 Tn 为偶数时' 或 '当 @n@ 为偶数时'" +
             "3. 文字识别要求：" +
-            "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，纠修后的词要用“加粗”方式显示文本" +
+            "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，纠修后的词要用“行内代码”方式显示文本" +
             "   - 保持语句通顺和语义连贯性" +
             "   - 专业术语和特定名词需要准确识别" +
             "4. 直接输出内容，不要添加任何说明",
@@ -653,37 +656,12 @@ function App() {
                     )}
                   </div>
                   <div className="gradient-text">
-                    <div className="streaming-text">
-                      {streamingText.split('\n').map((line, index) => (
-                        <p 
-                          key={index} 
-                          className="animated-line"
-                          style={{ '--index': index }}
-                        >
-                          {line.includes('$') ? (
-                            line.split(/(\$\$.*?\$\$|\$.*?\$)/g).map((part, i) => {
-                              if (part.startsWith('$$') && part.endsWith('$$')) {
-                                return (
-                                  <div key={i} className="latex-block">
-                                    <BlockMath>{part.slice(2, -2)}</BlockMath>
-                                  </div>
-                                );
-                              } else if (part.startsWith('$') && part.endsWith('$')) {
-                                return (
-                                  <span key={i} className="latex-inline">
-                                    <InlineMath>{part.slice(1, -1)}</InlineMath>
-                                  </span>
-                                );
-                              } else {
-                                return part;
-                              }
-                            })
-                          ) : (
-                            line || ' '
-                          )}
-                        </p>
-                      ))}
-                    </div>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex]}
+                    >
+                      {streamingText}
+                    </ReactMarkdown>
                   </div>
                 </div>
               )}
