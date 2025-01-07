@@ -1,3 +1,4 @@
+请看以下脚本代码，如果我想把“智能识别多国语言及手写字体，上传或拖拽图片即刻识别文字内容”这行字与下面的框离近一点，应该怎么修改？
 @keyframes gradientMove {
   0% {
     background-position: 0% 50%;
@@ -1436,7 +1437,6 @@ main.has-content {
   padding: 0.5em 0;
 }
 
-/* 确保公式在移动端也能正确显示 */
 @media (max-width: 768px) {
   .katex-display {
     font-size: 0.9em;
@@ -1466,4 +1466,3 @@ main.has-content {
   padding: 0.5em 0;
   margin: 0;
 }
-
