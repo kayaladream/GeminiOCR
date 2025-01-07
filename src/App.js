@@ -1,4 +1,3 @@
-你好，可以修改代码使得在返回文字的Markdown框里实现编辑功能吗？直接可以修改或加一个修改按钮，点击后开启编辑功能。
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import 'katex/dist/katex.min.css';
