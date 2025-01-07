@@ -5,6 +5,8 @@ import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
+import MdEditor from 'react-markdown-editor-lite';
+import 'react-markdown-editor-lite/lib/index.css';
 import './App.css';
 
 // 初始化 Gemini API
@@ -45,7 +47,6 @@ function App() {
   const [showAnimation, setShowAnimation] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // 新增状态：是否正在编辑
 
   // 修改粘贴事件处理函数
   useEffect(() => {
@@ -145,26 +146,20 @@ function App() {
             "   - 正确输出：'当 $n$ 为偶数时'" +
             "   - 错误输出：'当 Tn 为偶数时' 或 '当 @n@ 为偶数时'" +
             "3. 文字识别要求：" +
-            "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，模糊不清和修正后的词要用'加粗'方式显示文本" +
+            "   - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正，纠修后的词要用“加粗”方式显示文本" +
             "   - 保持语句通顺和语义连贯性" +
             "   - 专业术语和特定名词需要准确识别" +
-            "4. 分段要求：" +
-            "   - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果" +
-            "5. 直接输出内容，不要添加任何说明",
+            "4. 直接输出内容，不要添加任何说明",
             imagePart
           ]);
 
           for await (const chunk of result.stream) {
             const chunkText = chunk.text();
             fullText += chunkText;
-
-            // 确保每个分段之间有两个换行符
-            const formattedText = fullText.replace(/\n+/g, '\n\n');
-
-            setStreamingText(formattedText);
+            setStreamingText(fullText);
             setResults(prevResults => {
               const newResults = [...prevResults];
-              newResults[index] = formattedText;
+              newResults[index] = fullText;
               return newResults;
             });
           }
@@ -203,14 +198,10 @@ function App() {
                 try {
                   const data = JSON.parse(line.slice(6));
                   fullText += data.text;
-
-                  // 确保每个分段之间有两个换行符
-                  const formattedText = fullText.replace(/\n+/g, '\n\n');
-
-                  setStreamingText(formattedText);
+                  setStreamingText(fullText);
                   setResults(prevResults => {
                     const newResults = [...prevResults];
-                    newResults[index] = formattedText;
+                    newResults[index] = fullText;
                     return newResults;
                   });
                 } catch (e) {
@@ -535,8 +526,7 @@ function App() {
         .replace(/\*(.*?)\*/g, '$1')     // 去除斜体符号 *
         .replace(/`(.*?)`/g, '$1')       // 去除行内代码符号 `
         .replace(/~~(.*?)~~/g, '$1')     // 去除删除线符号 ~~
-        .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // 去除链接符号 [text](url)
-        .replace(/\n+/g, '\n'); // 将多个换行符替换为单个换行符
+        .replace(/\[(.*?)\]\((.*?)\)/g, '$1'); // 去除链接符号 [text](url)
 
       // 复制纯文本到剪贴板
       navigator.clipboard.writeText(plainText)
@@ -546,7 +536,7 @@ function App() {
           const originalText = button.textContent;
           button.textContent = '已复制';
           button.classList.add('copied');
-
+          
           setTimeout(() => {
             button.textContent = originalText;
             button.classList.remove('copied');
@@ -556,22 +546,6 @@ function App() {
           console.error('复制失败:', err);
         });
     }
-  };
-
-  // 新增：处理编辑按钮点击
-  const handleEditClick = () => {
-    setIsEditing(!isEditing);
-  };
-
-  // 新增：处理文本区域内容变化
-  const handleTextChange = (e) => {
-    const newText = e.target.value;
-    setStreamingText(newText);
-    setResults(prevResults => {
-      const newResults = [...prevResults];
-      newResults[currentIndex] = newText;
-      return newResults;
-    });
   };
 
   return (
@@ -684,37 +658,27 @@ function App() {
                   <div className="result-header">
                     <span>第 {currentIndex + 1} 张图片的识别结果</span>
                     {results[currentIndex] && (
-                      <>
-                        <button 
-                          className="copy-button"
-                          onClick={handleCopyText}
-                        >
-                          复制内容
-                        </button>
-                        <button 
-                          className="edit-button"
-                          onClick={handleEditClick}
-                        >
-                          {isEditing ? '保存' : '编辑'}
-                        </button>
-                      </>
+                      <button 
+                        className="copy-button"
+                        onClick={handleCopyText}
+                      >
+                        复制内容
+                      </button>
                     )}
                   </div>
                   <div className="gradient-text">
-                    {isEditing ? (
-                      <textarea
-                        value={streamingText}
-                        onChange={handleTextChange}
-                        className="edit-textarea"
-                      />
-                    ) : (
-                      <ReactMarkdown
-                        remarkPlugins={[remarkMath]}
-                        rehypePlugins={[rehypeKatex]}
-                      >
-                        {streamingText}
-                      </ReactMarkdown>
-                    )}
+                    <MdEditor
+                      value={streamingText}
+                      style={{ height: '500px' }}
+                      renderHTML={(text) => (
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[rehypeKatex]}
+                        >
+                          {text}
+                        </ReactMarkdown>
+                      )}
+                    />
                   </div>
                 </div>
               )}
