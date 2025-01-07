@@ -45,6 +45,7 @@ function App() {
   const [showAnimation, setShowAnimation] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // 新增状态：是否正在编辑
 
   // 修改粘贴事件处理函数
   useEffect(() => {
@@ -557,6 +558,22 @@ function App() {
     }
   };
 
+  // 新增：处理编辑按钮点击
+  const handleEditClick = () => {
+    setIsEditing(!isEditing);
+  };
+
+  // 新增：处理文本区域内容变化
+  const handleTextChange = (e) => {
+    const newText = e.target.value;
+    setStreamingText(newText);
+    setResults(prevResults => {
+      const newResults = [...prevResults];
+      newResults[currentIndex] = newText;
+      return newResults;
+    });
+  };
+
   return (
     <div className="app">
       <header>
@@ -667,21 +684,37 @@ function App() {
                   <div className="result-header">
                     <span>第 {currentIndex + 1} 张图片的识别结果</span>
                     {results[currentIndex] && (
-                      <button 
-                        className="copy-button"
-                        onClick={handleCopyText}
-                      >
-                        复制内容
-                      </button>
+                      <>
+                        <button 
+                          className="copy-button"
+                          onClick={handleCopyText}
+                        >
+                          复制内容
+                        </button>
+                        <button 
+                          className="edit-button"
+                          onClick={handleEditClick}
+                        >
+                          {isEditing ? '保存' : '编辑'}
+                        </button>
+                      </>
                     )}
                   </div>
                   <div className="gradient-text">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkMath]}
-                      rehypePlugins={[rehypeKatex]}
-                    >
-                      {streamingText}
-                    </ReactMarkdown>
+                    {isEditing ? (
+                      <textarea
+                        value={streamingText}
+                        onChange={handleTextChange}
+                        className="edit-textarea"
+                      />
+                    ) : (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkMath]}
+                        rehypePlugins={[rehypeKatex]}
+                      >
+                        {streamingText}
+                      </ReactMarkdown>
+                    )}
                   </div>
                 </div>
               )}
