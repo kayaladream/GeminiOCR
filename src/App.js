@@ -664,12 +664,7 @@ function App() {
                       </button>
                     )}
                   </div>
-                  <div 
-                    className="gradient-text"
-                    contentEditable={true}
-                    suppressContentEditableWarning={true}
-                    style={{ height: '300px', overflowY: 'auto' }}
-                  >
+                  <div className="gradient-text">
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
