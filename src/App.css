@@ -62,8 +62,8 @@ body::before {
 /* 标题样式优化 */
 header {
   text-align: center;
-  margin-bottom: 4rem;
-  padding: 2rem;
+  margin-bottom: 1rem;
+  padding: 0rem;
   position: relative;
 }
 
@@ -74,7 +74,7 @@ header h1 {
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   letter-spacing: -0.5px;
 }
 
@@ -1342,8 +1342,8 @@ main.has-content {
 /* 添加 GitHub 图标样式 */
 .github-link {
   position: fixed;
-  top: 1rem;
-  right: 1rem;
+  top: 0.5rem;
+  right: 0.5rem;
   z-index: 1000;
   transition: transform 0.3s ease;
 }
@@ -1436,6 +1436,7 @@ main.has-content {
   padding: 0.5em 0;
 }
 
+/* 确保公式在移动端也能正确显示 */
 @media (max-width: 768px) {
   .katex-display {
     font-size: 0.9em;
