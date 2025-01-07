@@ -36,13 +36,6 @@ function App() {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [showModal, setShowModal] = useState(false);
-  const [showFullText, setShowFullText] = useState(false);
-  const [isNewResult, setIsNewResult] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [animatedText, setAnimatedText] = useState('');
-  const [isTextReady, setIsTextReady] = useState(false);
-  const [animationText, setAnimationText] = useState('');
-  const [showAnimation, setShowAnimation] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
 
@@ -675,7 +668,19 @@ function App() {
                       </button>
                     )}
                   </div>
-                  <div className="gradient-text">
+                  <div
+                    className="gradient-text"
+                    contentEditable={true}
+                    suppressContentEditableWarning={true}
+                    onInput={(e) => {
+                      const newText = e.currentTarget.textContent;
+                      setResults(prevResults => {
+                        const newResults = [...prevResults];
+                        newResults[currentIndex] = newText;
+                        return newResults;
+                      });
+                    }}
+                  >
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
