@@ -1,4 +1,1512 @@
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 整体背景和容器样式优化 */
+body {
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 0% 0%, rgba(0, 113, 227, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 100% 0%, rgba(98, 0, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(255, 44, 171, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(0, 113, 227, 0.05) 0%, transparent 50%);
+  z-index: -1;
+  animation: backgroundShift 15s ease-in-out infinite alternate;
+}
+
+@keyframes backgroundShift {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  position: relative;
+  z-index: 1;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* 标题样式优化 */
+header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0rem;
+  position: relative;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0071e3, #6200ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+header p {
+  font-size: 0.8rem;
+  color: #86868b;
+  font-weight: 400;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.upload-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.upload-button {
+  background: linear-gradient(135deg, #0071e3, #6200ff);
+  color: white;
+  padding: 1rem 2.5rem;
+  border-radius: 99px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 113, 227, 0.2);
+}
+
+.upload-button::after {
+  display: none;
+}
+
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 113, 227, 0.3);
+}
+
+.content-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2.5rem;
+  margin-top: 2rem;
+}
+
+.image-preview {
+  position: relative;
+  aspect-ratio: 4/3;
+  margin-top: 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fafafa;
+  border-radius: 12px;
+  z-index: 1;
+}
+
+.image-preview::before,
+.image-preview::after {
+  display: none;
+}
+
+.image-preview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview.loading::before {
+  display: none;
+}
+
+.image-preview.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 113, 227, 0.2),
+    rgba(98, 0, 255, 0.2),
+    rgba(255, 44, 171, 0.2),
+    rgba(0, 113, 227, 0.2)
+  );
+  background-size: 200% 100%;
+  animation: gradientMove 2s linear infinite;
+  z-index: 2;
+  border-radius: 12px;
+}
+
+.result-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 113, 227, 0.1);
+  transition: none;
+  overflow-y: auto;
+  max-height: 100%;
+  height: auto;
+  scroll-behavior: smooth;
+}
+
+.result-container:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+}
+
+.loading {
+  color: #0071e3;
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.loading::after {
+  border-width: 3px;
+  border-color: #0071e3;
+  border-right-color: transparent;
+}
+
+.loading::before {
+  display: none;
+}
+
+.result-text {
+  line-height: 1.6;
+  color: #1d1d1f;
+  width: 100%;
+  padding: 1rem 0;
+  transition: none;
+}
+
+.animated-text {
+  opacity: 0;
+  animation: textAppear 2s ease forwards;
+}
+
+.animated-text p,
+.animated-text li,
+.animated-text td,
+.animated-text th {
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab, #1d1d1f);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+@keyframes textAppear {
+  0% {
+    opacity: 0;
+    background-position: 0% 50%;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    background-position: 100% 50%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  100% {
+    opacity: 1;
+    background-position: 100% 50%;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+  }
+}
+
+.result-text table,
+.result-text ul,
+.result-text ol {
+  width: 100%;
+  opacity: 1;
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
+  margin: 1rem 0;
+}
+
+.result-text table {
+  border-collapse: collapse;
+}
+
+.result-text th,
+.result-text td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
+}
+
+.result-text table,
+.result-text ul,
+.result-text ol {
+  margin: 1rem 0;
+}
+
+.result-text p {
+  margin: 0.5rem 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 768px) {
+  .content-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .result-container {
+    height: 300px;
+  }
+}
+
+.upload-zone {
+  position: relative;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-zone.dragging {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.05);
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+}
+
+.upload-zone.dragging .upload-container,
+.upload-zone.dragging .upload-hint {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.upload-zone.dragging::after {
+  content: '拖拽到此处上传图片';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2em;
+  color: #4CAF50;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -40%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+.upload-container {
+  transition: all 0.3s ease;
+}
+
+.upload-hint {
+  margin-top: 1rem;
+  color: #86868b;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.drag-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(76, 175, 80, 0.1);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.drag-overlay.active {
+  display: block;
+}
+
+.drag-overlay::after {
+  content: '将图片拖到下方框内';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+  color: #4CAF50;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 15px 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.upload-hint {
+  margin-top: 1rem;
+  color: #86868b;
+  font-size: 0.9rem;
+  user-select: none;
+  text-align: center;
+  width: 100%;
+}
+
+.gradient-text {
+  opacity: 1;
+  color: #1d1d1f;
+  position: relative;
+  min-height: 100px;
+}
+
+.gradient-text > div {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* 确保表格和列表正确显示 */
+.gradient-text table,
+.gradient-text ul,
+.gradient-text ol {
+  margin: 1rem 0;
+}
+
+.gradient-text table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.gradient-text th,
+.gradient-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: left;
+}
+
+.result-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  background: rgba(255, 255, 255, 0.8);
+  table-layout: fixed;
+}
+
+.result-text th,
+.result-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: left;
+  word-wrap: break-word;
+  min-width: 100px;
+}
+
+.result-text td > *,
+.result-text th > * {
+  display: inline-block;
+  width: 100%;
+  height: 100%;
+}
+
+.result-text table,
+.result-text ul,
+.result-text ol {
+  opacity: 1;
+  color: #1d1d1f;
+  margin: 1rem 0;
+}
+
+.result-text tr:hover td {
+  background: rgba(0, 113, 227, 0.02);
+}
+
+.result-text table .gradient-text {
+  display: inline-block;
+  width: 100%;
+}
+
+.result-text table,
+.result-text ul,
+.result-text ol {
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out 0.3s forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 添加加载遮罩层样式 */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 113, 227, 0.08),
+    rgba(98, 0, 255, 0.08),
+    rgba(255, 44, 171, 0.08),
+    rgba(0, 113, 227, 0.08)
+  );
+  background-size: 300% 100%;
+  animation: gradientMove 3s linear infinite;
+  border-radius: 12px;
+  z-index: 2;
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+/* 移除 PulseLoader */
+.loading-overlay .css-0 {
+  display: none;
+}
+
+/* 修改主要布局样式 */
+main {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+main.has-content {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2.5rem;
+}
+
+.upload-section {
+  width: 100%;
+  max-width: 600px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.upload-section.with-image {
+  width: 300px;
+}
+
+.result-section {
+  flex: 1;
+  min-width: 0;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+  max-height: calc(100vh - 200px);
+  position: sticky;
+  top: 2rem;
+}
+
+.result-container {
+  height: calc(100vh - 250px);
+  min-height: 400px;
+}
+
+/* 修改上传区域样式 */
+.upload-zone {
+  transition: all 0.3s ease;
+}
+
+.upload-section.with-image .upload-zone {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 修改图片预览区域样式 */
+.image-preview {
+  position: relative;
+  aspect-ratio: 4/3;
+  margin-top: 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fafafa;
+  border-radius: 12px;
+  z-index: 1;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+  main.has-content {
+    flex-direction: column;
+  }
+
+  .upload-section.with-image {
+    width: 100%;
+  }
+
+  .result-container {
+    height: 300px;
+  }
+}
+
+/* 滚动条美化 */
+.result-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.result-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.result-container::-webkit-scrollbar-thumb {
+  background: #0071e3;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.result-container::-webkit-scrollbar-thumb:hover {
+  background: #0077ed;
+}
+
+/* 添加链接按钮样式 */
+.upload-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.url-button {
+  background: transparent;
+  color: #0071e3;
+  padding: 1rem 2rem;
+  border-radius: 99px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid #0071e3;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.url-button:hover {
+  background: rgba(0, 113, 227, 0.1);
+  transform: translateY(-2px);
+}
+
+/* URL 输入表单样式 */
+.url-form {
+  width: 100%;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 2px solid rgba(0, 113, 227, 0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+}
+
+.url-submit {
+  padding: 0.8rem 1.5rem;
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.url-submit:hover {
+  background: #0077ed;
+  transform: translateY(-2px);
+}
+
+/* 响应式布局优化 */
+@media (max-width: 768px) {
+  .result-section {
+    max-height: 50vh;
+    position: relative;
+    top: 0;
+  }
+
+  .result-container {
+    height: 100%;
+  }
+}
+
+/* 添加图片导航样式 */
+.images-preview {
+  width: 100%;
+}
+
+.image-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.nav-button {
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.nav-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 113, 227, 0.3);
+}
+
+.image-counter {
+  font-size: 0.9rem;
+  color: #86868b;
+  min-width: 60px;
+  text-align: center;
+}
+
+/* 修改文件输入框支持多文件 */
+#file-input {
+  display: none;
+}
+
+/* 添加结果标题样式 */
+.result-header {
+  font-size: 1rem;
+  color: #86868b;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 113, 227, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* 优化结果容器的滚动效果 */
+.result-container {
+  scroll-behavior: smooth;
+}
+
+/* 确保结果文本容器有足够的间距 */
+.result-text {
+  padding: 1rem 0;
+}
+
+/* 添加模态框样式 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.3s ease-out;
+}
+
+.modal-content img {
+  max-width: 100%;
+  max-height: calc(90vh - 2rem);
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.modal-close {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: white;
+  border: none;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+  background: #f5f5f5;
+  transform: scale(1.1);
+}
+
+@keyframes scaleIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 修改图片预览的鼠标样式 */
+.image-preview img {
+  cursor: zoom-in;
+}
+
+/* 修改文字渲染相关的样式 */
+.gradient-text {
+  opacity: 1;
+  color: #1d1d1f;
+}
+
+.gradient-text > div {
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* 确保表格和列表正确显示 */
+.gradient-text table,
+.gradient-text ul,
+.gradient-text ol {
+  margin: 1rem 0;
+}
+
+.gradient-text table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.gradient-text th,
+.gradient-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: left;
+}
+
+/* 修改表格和列表的渲染 */
+.result-text table,
+.result-text ul,
+.result-text ol {
+  opacity: 1;
+  color: #1d1d1f;
+  margin: 1rem 0;
+}
+
+/* 确保所有文本元素都有正确的颜色回退 */
+.result-text * {
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
+  transition: color 0.3s ease, -webkit-text-fill-color 0.3s ease;
+}
+
+/* 修改文字动画样式 */
+.typing-text {
+  white-space: pre-wrap;
+  font-family: inherit;
+  line-height: 1.8;
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientMove 3s linear infinite;
+}
+
+.animated-text {
+  opacity: 0;
+  animation: textAppear 2s ease forwards;
+}
+
+.animated-text p,
+.animated-text li {
+  margin: 1rem 0;
+  line-height: 1.8;
+}
+
+@keyframes textAppear {
+  0% {
+    opacity: 0;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  50% {
+    opacity: 1;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  100% {
+    opacity: 1;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+    background: none;
+  }
+}
+
+/* 优化表格样式 */
+.result-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.result-text th,
+.result-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px 16px;
+  text-align: left;
+  line-height: 1.6;
+}
+
+/* 优化列表样式 */
+.result-text ul,
+.result-text ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.result-text li {
+  margin: 0.5rem 0;
+}
+/* 优化段落样式 */
+.result-text p {
+  margin: 1rem 0;
+  line-height: 1.8;
+}
+
+/* 修改文字动画相关的样式 */
+.result-text p,
+.result-text li,
+.result-text td,
+.result-text th {
+  opacity: 0;
+  animation: textFadeInWithGradient 3s ease-out forwards;
+  animation-delay: calc(var(--line-index, 0) * 100ms);
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.8;
+  margin: 0.8rem 0;
+}
+
+@keyframes textFadeInWithGradient {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    background-position: 0% 50%;
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  60% {
+    background-position: 100% 50%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  100% {
+    opacity: 1;
+    background: none;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+  }
+}
+
+/* 优化表格样式 */
+.result-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.result-text th,
+.result-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+/* 优化列表样式 */
+.result-text ul,
+.result-text ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+/* 确保列表项有正确的间距 */
+.result-text li + li {
+  margin-top: 0.5rem;
+}
+
+/* 修改文字动画样式 */
+.gradient-text pre {
+  opacity: 0;
+  animation: textFadeIn 0.5s ease forwards;
+  line-height: 1.8;
+  margin: 0;
+  padding: 0;
+}
+
+.gradient-text pre span {
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 3s ease forwards;
+  animation-delay: 0.5s;
+}
+
+@keyframes textFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  50% {
+    background-position: 100% 50%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  100% {
+    background-position: 100% 50%;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+  }
+}
+
+/* 打字机动画样式 */
+.typing-animation {
+  white-space: pre-wrap;
+  font-family: inherit;
+  line-height: 1.8;
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientMove 3s linear infinite;
+}
+
+.animated-text.animating p,
+.animated-text.animating li {
+  opacity: 0;
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: textFadeInWithGradient 3s ease-out forwards;
+}
+
+@keyframes textFadeInWithGradient {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+    background-position: 0% 50%;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0);
+    background-position: 100% 50%;
+  }
+  100% {
+    opacity: 1;
+    background: none;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+  }
+}
+
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+.markdown-text {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.markdown-text.ready {
+  opacity: 1;
+}
+
+.animated-line {
+  opacity: 0;
+  position: relative;
+  animation: smoothReveal 2.5s ease-out forwards;
+  animation-delay: calc(var(--index) * 80ms);
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  transition: color 0.5s ease, -webkit-text-fill-color 0.5s ease;
+}
+
+@keyframes smoothReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    background-position: 0% 50%;
+  }
+  
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  85% {
+    background-position: 100% 50%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  95% {
+    color: rgba(29, 29, 31, 0);
+    -webkit-text-fill-color: rgba(29, 29, 31, 0);
+    background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  
+  100% {
+    opacity: 1;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+    background: none;
+  }
+}
+
+/* 确保表格和列表的样式正确 */
+.result-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.result-text th,
+.result-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: left;
+}
+
+.result-text ul,
+.result-text ol {
+  padding-left: 1.5rem;
+  margin: 1rem 0;
+}
+
+.result-text li {
+  margin: 0.5rem 0;
+}
+
+.streaming-text {
+  white-space: pre-wrap;
+  line-height: 1.8;
+  position: relative;
+  width: 100%;
+  min-height: inherit;
+}
+
+.animated-line {
+  opacity: 0;
+  animation: smoothReveal 1s ease-out forwards;
+  animation-delay: calc(var(--index) * 50ms);
+  line-height: 1.8;
+  margin: 0.5rem 0;
+  min-height: 1.5em;
+}
+
+@keyframes smoothReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(5px);
+    background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  30% {
+    opacity: 1;
+    transform: translateY(0);
+    background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  60% {
+    opacity: 1;
+    color: rgba(29, 29, 31, 0.8);
+    -webkit-text-fill-color: rgba(29, 29, 31, 0.8);
+    background: none;
+  }
+  
+  100% {
+    opacity: 1;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+    background: none;
+  }
+}
+
+/* 确保 Markdown 文本也使用相同的动画 */
+.markdown-text.ready p,
+.markdown-text.ready li,
+.markdown-text.ready td,
+.markdown-text.ready th {
+  opacity: 0;
+  animation: smoothReveal 1s ease-out forwards;
+  animation-delay: calc(var(--index) * 50ms);
+}
+
+/* 添加复制按钮样式 */
+.copy-button {
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.copy-button:hover {
+  background: #0077ed;
+  transform: translateY(-1px);
+}
+
+.copy-button.copied {
+  background: #34c759;
+}
+
+/* 添加响应式样式 */
+@media (max-width: 768px) {
+  .result-header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+  }
+  
+  .copy-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 添加 GitHub 图标样式 */
+.github-link {
+  position: fixed;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+
+.github-link:hover {
+  transform: scale(1.1);
+}
+
+.github-link svg {
+  fill: #1d1d1f;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.github-link:hover svg {
+  fill: #0071e3;
+  opacity: 1;
+}
+
+/* 适配移动端 */
+@media (max-width: 768px) {
+  .github-link {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  .github-link svg {
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* LaTeX 公式样式 */
+.latex-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+.latex-block {
+  margin: 1em 0;
+  overflow-x: auto;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.latex-block .katex-display {
+  margin: 0;
+  padding: 0.5em 0;
+}
+
+.katex {
+  font-size: 1.1em;
+  line-height: 1.2;
+  text-rendering: optimizeLegibility;
+}
+
+.katex-display > .katex {
+  display: flex !important;
+  justify-content: center;
+  width: 100%;
+}
+
+/* 确保公式不会被截断 */
+.katex-html {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+/* 确保公式也有渐变效果 */
+.animated-line .latex-inline,
+.animated-line .latex-block {
+  opacity: inherit;
+  color: inherit;
+  -webkit-text-fill-color: inherit;
+}
+
+/* 优化公式显示 */
+.katex {
+  font-size: 1.1em;
+}
+
+.katex-display {
+  margin: 1em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+/* 确保公式在移动端也能正确显示 */
+@media (max-width: 768px) {
+  .katex-display {
+    font-size: 0.9em;
+  }
+  
+  .latex-block {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+.latex-block {
+  margin: 1em 0;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.latex-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.2em;
+}
+
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+  margin: 0;
+}
+
 /* ==================== */
+/* Markdown 编辑功能样式 */
+/* ==================== */
+
+/* 编辑按钮样式 */
+.edit-button {
+  margin-left: 10px;
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.edit-button:hover {
+  background-color: #0056b3;
+}
+
+/* 编辑模式下的文本区域样式 */
+.edit-textarea {
+  width: 100%;
+  height: 300px;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  resize: vertical;
+  background-color: #fff;
+  color: #1d1d1f;
+  line-height: 1.6;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}/* ==================== */
 /* 全局样式 */
 /* ==================== */
 body {
