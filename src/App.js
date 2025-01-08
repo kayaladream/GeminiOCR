@@ -681,6 +681,23 @@ function App() {
                         return newResults;
                       });
                     }}
+                    onPaste={(e) => {
+                      e.preventDefault(); // 阻止默认粘贴行为
+
+                      // 获取粘贴的纯文本内容
+                      const text = e.clipboardData.getData('text/plain');
+
+                      // 插入粘贴的文本到当前光标位置
+                      document.execCommand('insertText', false, text);
+
+                      // 更新状态
+                      const newText = e.currentTarget.textContent;
+                      setResults(prevResults => {
+                        const newResults = [...prevResults];
+                        newResults[currentIndex] = newText;
+                        return newResults;
+                      });
+                    }}
                   >
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
