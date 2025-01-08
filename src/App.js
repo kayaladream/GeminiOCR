@@ -734,6 +734,11 @@ function App() {
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
+                      components={{
+                        // 禁用有序列表渲染
+                        ol: ({ node, ...props }) => <div {...props} />,
+                        li: ({ node, ...props }) => <div {...props} />,
+                      }}
                     >
                       {streamingText}
                     </ReactMarkdown>
