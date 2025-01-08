@@ -38,7 +38,6 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isEditing, setIsEditing] = useState(false); // 编辑模式状态
 
   // 修改粘贴事件处理函数
   useEffect(() => {
@@ -662,95 +661,83 @@ function App() {
                   <div className="result-header">
                     <span>第 {currentIndex + 1} 张图片的识别结果</span>
                     {results[currentIndex] && (
-                      <>
-                        <button 
-                          className="copy-button"
-                          onClick={handleCopyText}
-                        >
-                          复制内容
-                        </button>
-                        <button 
-                          className="edit-button"
-                          onClick={() => setIsEditing(!isEditing)}
-                        >
-                          {isEditing ? '保存' : '编辑'}
-                        </button>
-                      </>
+                      <button 
+                        className="copy-button"
+                        onClick={handleCopyText}
+                      >
+                        复制内容
+                      </button>
                     )}
                   </div>
-                  {isEditing ? (
-                    <div
-                      className="gradient-text"
-                      contentEditable={true}
-                      suppressContentEditableWarning={true}
-                      onInput={(e) => {
-                        const newText = e.currentTarget.textContent;
-                        setResults(prevResults => {
-                          const newResults = [...prevResults];
-                          newResults[currentIndex] = newText;
-                          return newResults;
-                        });
-                      }}
-                      onPaste={(e) => {
-                        e.preventDefault(); // 阻止默认粘贴行为
-                        const text = e.clipboardData.getData('text/plain');
-                        document.execCommand('insertText', false, text);
-                        const newText = e.currentTarget.textContent;
-                        setResults(prevResults => {
-                          const newResults = [...prevResults];
-                          newResults[currentIndex] = newText;
-                          return newResults;
-                        });
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Backspace') {
-                          const selection = window.getSelection();
-                          if (selection.isCollapsed && selection.rangeCount > 0) {
-                            const range = selection.getRangeAt(0);
-                            const { startContainer, startOffset } = range;
+                  <div
+                    className="gradient-text"
+                    contentEditable={true}
+                    suppressContentEditableWarning={true}
+                    onInput={(e) => {
+                      const newText = e.currentTarget.textContent;
+                      setResults(prevResults => {
+                        const newResults = [...prevResults];
+                        newResults[currentIndex] = newText;
+                        return newResults;
+                      });
+                    }}
+                    onPaste={(e) => {
+                      e.preventDefault(); // 阻止默认粘贴行为
+                      const text = e.clipboardData.getData('text/plain');
+                      document.execCommand('insertText', false, text);
+                      const newText = e.currentTarget.textContent;
+                      setResults(prevResults => {
+                        const newResults = [...prevResults];
+                        newResults[currentIndex] = newText;
+                        return newResults;
+                      });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Backspace') {
+                        const selection = window.getSelection();
+                        if (selection.isCollapsed && selection.rangeCount > 0) {
+                          const range = selection.getRangeAt(0);
+                          const { startContainer, startOffset } = range;
 
-                            // 如果光标位于段落开头
-                            if (startOffset === 0 && startContainer.nodeType === Node.TEXT_NODE) {
-                              e.preventDefault(); // 阻止默认删除行为
+                          // 如果光标位于段落开头
+                          if (startOffset === 0 && startContainer.nodeType === Node.TEXT_NODE) {
+                            e.preventDefault(); // 阻止默认删除行为
 
-                              // 获取当前段落
-                              const currentParagraph = startContainer.parentElement;
+                            // 获取当前段落
+                            const currentParagraph = startContainer.parentElement;
 
-                              // 获取上一段落
-                              const previousParagraph = currentParagraph.previousElementSibling;
+                            // 获取上一段落
+                            const previousParagraph = currentParagraph.previousElementSibling;
 
-                              if (previousParagraph) {
-                                // 将当前段落的内容合并到上一段落
-                                const previousText = previousParagraph.textContent;
-                                const currentText = currentParagraph.textContent;
-                                previousParagraph.textContent = previousText + currentText;
+                            if (previousParagraph) {
+                              // 将当前段落的内容合并到上一段落
+                              const previousText = previousParagraph.textContent;
+                              const currentText = currentParagraph.textContent;
+                              previousParagraph.textContent = previousText + currentText;
 
-                                // 删除当前段落
-                                currentParagraph.remove();
+                              // 删除当前段落
+                              currentParagraph.remove();
 
-                                // 更新状态
-                                const newText = e.currentTarget.textContent;
-                                setResults(prevResults => {
-                                  const newResults = [...prevResults];
-                                  newResults[currentIndex] = newText;
-                                  return newResults;
-                                });
-                              }
+                              // 更新状态
+                              const newText = e.currentTarget.textContent;
+                              setResults(prevResults => {
+                                const newResults = [...prevResults];
+                                newResults[currentIndex] = newText;
+                                return newResults;
+                              });
                             }
                           }
                         }
-                      }}
-                    >
-                      {streamingText}
-                    </div>
-                  ) : (
+                      }
+                    }}
+                  >
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                     >
                       {streamingText}
                     </ReactMarkdown>
-                  )}
+                  </div>
                 </div>
               )}
             </div>
