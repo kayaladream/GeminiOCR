@@ -21,6 +21,7 @@ https://ocr.howen.ink/
 ## 部署说明
 
 本项目使用 Vercel 进行部署。在部署时需要设置以下环境变量：
+`GEMINI_API_KEY`
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fcokice%2Fgoogleocr-app&env=GEMINI_API_KEY&envDescription=Your%20Google%20Gemini%20API&project-name=geminiocr&repository-name=geminiocr)
 ## Gemini API 密钥获取
