@@ -1466,8 +1466,3 @@ main.has-content {
   padding: 0.5em 0;
   margin: 0;
 }
-
-/* 添加光标颜色样式 */
-input, textarea, [contenteditable] {
-  caret-color: blue; /* 将光标颜色改为蓝色 */
-}
