@@ -20,7 +20,8 @@ const generationConfig = {
 
 // 简化 LaTeX 处理函数
 const processLatex = (text) => {
-  return text; // 直接返回文本，react-katex 会自动处理 LaTeX
+  // 直接返回包含 $ 的文本，让 react-katex 处理
+  return text;
 };
 
 function App() {
@@ -43,7 +44,7 @@ function App() {
     const handlePaste = async (e) => {
       e.preventDefault();
       const items = Array.from(e.clipboardData.items);
-
+      
       for (const item of items) {
         // 处理图片
         if (item.type.startsWith('image/')) {
@@ -53,11 +54,11 @@ function App() {
             try {
               const imageUrl = URL.createObjectURL(file);
               const newIndex = images.length;
-
+              
               setImages(prev => [...prev, imageUrl]);
               setResults(prev => [...prev, '']);
               setCurrentIndex(newIndex);
-
+              
               await handleFile(file, newIndex);
             } catch (error) {
               console.error('Error processing pasted image:', error);
@@ -114,7 +115,7 @@ function App() {
         });
 
         let fullText = '';
-
+        
         // 判断是开发环境还是生产环境
         if (process.env.NODE_ENV === 'development') {
           // 开发环境：直接调用 Gemini API
@@ -205,7 +206,7 @@ function App() {
 
             const chunk = new TextDecoder().decode(value);
             const lines = chunk.split('\n');
-
+            
             for (const line of lines) {
               if (line.startsWith('data: ')) {
                 try {
@@ -259,20 +260,20 @@ function App() {
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     setIsLoading(true);
-
+    
     try {
-      const startIndex = images.length;
-
+      const startIndex = images.length;  // 获取当前图片数量作为起始索引
+      
       // 先一次性更新所有图片预览
       const imageUrls = files.map(file => URL.createObjectURL(file));
       setImages(prev => [...prev, ...imageUrls]);
-
+      
       // 初始化结果数组
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
-
+      
       // 立即切换到第一张新图片
       setCurrentIndex(startIndex);
-
+      
       // 使用并发控制处理文件
       await concurrentProcess(
         files,
@@ -377,7 +378,7 @@ function App() {
     setIsDragging(false);
     setIsDraggingGlobal(false);
     setIsLoading(true);
-
+    
     try {
       const items = Array.from(e.dataTransfer.items);
       const filePromises = items.map(async (item) => {
@@ -396,12 +397,12 @@ function App() {
 
       const files = (await Promise.all(filePromises)).filter(file => file !== null);
       const startIndex = images.length;
-
+      
       const imageUrls = files.map(file => URL.createObjectURL(file));
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
-
+      
       await concurrentProcess(
         files,
         (file, index) => handleFile(file, startIndex + index)
@@ -418,20 +419,20 @@ function App() {
     e.preventDefault();
     if (!imageUrl) return;
     setIsLoading(true);
-
+    
     try {
       let imageBlob;
-
+      
       // 处理 base64 图片
       if (imageUrl.startsWith('data:image/')) {
         const base64Data = imageUrl.split(',')[1];
         const byteCharacters = atob(base64Data);
         const byteArrays = [];
-
+        
         for (let i = 0; i < byteCharacters.length; i++) {
           byteArrays.push(byteCharacters.charCodeAt(i));
         }
-
+        
         imageBlob = new Blob([new Uint8Array(byteArrays)], { type: 'image/png' });
       } else {
         // 使用多个代理服务，如果一个失败就尝试下一个
@@ -452,13 +453,15 @@ function App() {
                 'origin': window.location.origin
               }
             });
-
+            
             if (!response.ok) throw new Error('Proxy fetch failed');
             imageBlob = await response.blob();
-            break; // 如果成功获取图片，跳出循环
+            // 如果成功获取图片，跳出循环
+            break;
           } catch (e) {
             error = e;
-            continue; // 如果当前代理失败，继续尝试下一个
+            // 如果当前代理失败，继续尝试下一个
+            continue;
           }
         }
 
@@ -470,19 +473,21 @@ function App() {
             });
             imageBlob = await response.blob();
           } catch (e) {
-            throw error || e; // 如果直接获取也失败，抛出最后的错误
+            // 如果直接获取也失败，抛出最后的错误
+            throw error || e;
           }
         }
       }
-
+      
       // 确保获取到的是图片
       if (!imageBlob.type.startsWith('image/')) {
+        // 如果 MIME 类型不是图片，尝试强制设置为图片
         imageBlob = new Blob([imageBlob], { type: 'image/jpeg' });
       }
-
+      
       const file = new File([imageBlob], 'image.jpg', { type: imageBlob.type });
       const imageUrlObject = URL.createObjectURL(file);
-
+      
       // 验证图片是否可用
       await new Promise((resolve, reject) => {
         const img = new Image();
@@ -490,19 +495,19 @@ function App() {
         img.onerror = reject;
         img.src = imageUrlObject;
       });
-
+      
       const newIndex = images.length;
       setImages(prev => [...prev, imageUrlObject]);
       setResults(prev => [...prev, '']);
       setCurrentIndex(newIndex);
-
+      
       await handleFile(file, newIndex);
-
+      
       setShowUrlInput(false);
       setImageUrl('');
     } catch (error) {
       console.error('Error loading image:', error);
-
+      
       // 提供更详细的错误信息
       let errorMessage = '无法加载图片，';
       if (error.message.includes('CORS')) {
@@ -513,7 +518,7 @@ function App() {
         errorMessage += '请检查链接是否正确。';
       }
       errorMessage += '\n您可以尝试：\n1. 右键图片另存为后上传\n2. 使用截图工具后粘贴\n3. 复制图片本身而不是链接';
-
+      
       alert(errorMessage);
     } finally {
       setIsLoading(false);
@@ -608,7 +613,7 @@ function App() {
                 {showUrlInput ? '取消' : '使用链接'}
               </button>
             </div>
-
+            
             {showUrlInput && (
               <form onSubmit={handleUrlSubmit} className="url-form">
                 <input
@@ -623,12 +628,12 @@ function App() {
                 </button>
               </form>
             )}
-
+            
             {!images.length > 0 && !showUrlInput && (
               <p className="upload-hint">或将图片拖放到此处</p>
             )}
           </div>
-
+          
           {images.length > 0 && (
             <div className="images-preview">
               <div className="image-navigation">
