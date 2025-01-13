@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, Suspense } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
@@ -7,13 +7,6 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
 import pdfjs from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
-
-// 设置 PDF.js 的 Worker 路径
-pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-
-// 动态加载 PDF 处理模块
-const PdfHandler = React.lazy(() => import('./components/PdfHandler'));
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -79,6 +72,33 @@ const preprocessText = (text) => {
   return text.trim();
 };
 
+// 处理 PDF 文件
+const handlePdfFile = async (file, index) => {
+  try {
+    const fileReader = new FileReader();
+    const pdfData = await new Promise((resolve) => {
+      fileReader.onload = () => resolve(fileReader.result);
+      fileReader.readAsArrayBuffer(file);
+    });
+
+    const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
+    const totalPages = pdf.numPages;
+    let fullText = '';
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n\n';
+    }
+
+    return preprocessText(fullText);
+  } catch (error) {
+    console.error('PDF处理错误:', error);
+    throw new Error(`PDF处理失败: ${error.message}`);
+  }
+};
+
 function App() {
   const [images, setImages] = useState([]);
   const [results, setResults] = useState([]);
@@ -93,34 +113,6 @@ function App() {
   const [showModal, setShowModal] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
-
-  // 处理 PDF 文件
-  const handlePdfFile = async (file, index) => {
-    try {
-      const fileReader = new FileReader();
-      const pdfData = await new Promise((resolve, reject) => {
-        fileReader.onload = () => resolve(fileReader.result);
-        fileReader.onerror = () => reject(new Error('Failed to read file'));
-        fileReader.readAsArrayBuffer(file);
-      });
-
-      const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
-      const totalPages = pdf.numPages;
-      let fullText = '';
-
-      for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(' ');
-        fullText += pageText + '\n\n';
-      }
-
-      return preprocessText(fullText);
-    } catch (error) {
-      console.error('PDF处理错误:', error);
-      throw new Error(`PDF处理失败: ${error.message}`);
-    }
-  };
 
   // 修改粘贴事件处理函数
   useEffect(() => {
