@@ -84,6 +84,7 @@ header p {
   font-weight: 400;
   max-width: 600px;
   margin: 0 auto;
+  white-space: nowrap; /* 强制不换行 */
 }
 
 .upload-container {
