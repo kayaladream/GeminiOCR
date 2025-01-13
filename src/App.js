@@ -148,7 +148,7 @@ function App() {
              - 专业术语和特定名词需要准确识别
 
           4. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
-             | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+             | DESCRIPTION    | RATE    | HOURS | AMOUNT   |
              |---------------|---------|-------|----------|
              | Copy Writing  | $50/hr  | 4     | $200.00  |
              | Website Design| $50/hr  | 2     | $100.00  |   
