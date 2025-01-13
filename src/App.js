@@ -246,7 +246,7 @@ function App() {
             fullText += chunkText;
 
             // 确保每个分段之间有两个换行符
-            const formattedText = preprocessText(fullText);
+            const formattedText = fullText.replace(/\n+/g, '\n\n');
 
             setStreamingText(formattedText);
             setResults(prevResults => {
