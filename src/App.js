@@ -7,6 +7,10 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
 import pdfjs from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+
+// 设置 PDF.js 的 Worker 路径
+pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -75,17 +79,22 @@ const preprocessText = (text) => {
 // 处理 PDF 文件
 const handlePdfFile = async (file, index) => {
   try {
+    console.log('Loading PDF file...');
     const fileReader = new FileReader();
-    const pdfData = await new Promise((resolve) => {
+    const pdfData = await new Promise((resolve, reject) => {
       fileReader.onload = () => resolve(fileReader.result);
+      fileReader.onerror = () => reject(new Error('Failed to read file'));
       fileReader.readAsArrayBuffer(file);
     });
 
+    console.log('PDF file loaded, getting document...');
     const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
+    console.log('Document loaded, processing pages...');
     const totalPages = pdf.numPages;
     let fullText = '';
 
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      console.log(`Processing page ${pageNum}...`);
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
       const pageText = textContent.items.map(item => item.str).join(' ');
