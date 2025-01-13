@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
+import pdfjs from 'pdfjs-dist';
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -18,10 +19,84 @@ const generationConfig = {
   maxOutputTokens: 8192,
 };
 
-// 简化 LaTeX 处理函数
-const processLatex = (text) => {
-  // 直接返回包含 $ 的文本，让 react-katex 处理
-  return text;
+// 预处理函数
+const preprocessText = (text) => {
+  if (!text) return '';
+
+  // 临时保存表格内容
+  const tables = [];
+  text = text.replace(/(\|[^\n]+\|\n\|[-|\s]+\|\n\|[^\n]+\|(\n|$))+/g, (match) => {
+    tables.push(match);
+    return `__TABLE_${tables.length - 1}__`;
+  });
+
+  // 标准化数学公式分隔符
+  text = text.replace(/\\\\\(/g, '$');
+  text = text.replace(/\\\\\)/g, '$');
+  text = text.replace(/\\\\\[/g, '$$');
+  text = text.replace(/\\\\\]/g, '$$');
+
+  // 移除所有的 ``` 标记
+  text = text.replace(/```[\s\S]*?```/g, (match) => {
+    const content = match.slice(3, -3).trim();
+    return content;
+  });
+
+  // 移除单独的 ``` 标记和语言标识
+  text = text.replace(/```\w*\n?/g, '');
+
+  // 处理数字序号后的换行问题
+  text = text.replace(/(\d+)\.\s*\n+/g, '$1. ');
+
+  // 处理块级公式的格式
+  text = text.replace(/\n*\$\$\s*([\s\S]*?)\s*\$\$\n*/g, (match, formula) => {
+    return `\n\n$$${formula.trim()}$$\n\n`;
+  });
+
+  // 处理行内公式的格式
+  text = text.replace(/\$\s*(.*?)\s*\$/g, (match, formula) => {
+    return `$${formula.trim()}$`;
+  });
+
+  // 处理数字序号和公式之间的格式
+  text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
+
+  // 处理多余的空行
+  text = text.replace(/\n{3,}/g, '\n\n');
+
+  // 还原表格内容
+  text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
+    return tables[parseInt(index)];
+  });
+
+  return text.trim();
+};
+
+// 处理 PDF 文件
+const handlePdfFile = async (file, index) => {
+  try {
+    const fileReader = new FileReader();
+    const pdfData = await new Promise((resolve) => {
+      fileReader.onload = () => resolve(fileReader.result);
+      fileReader.readAsArrayBuffer(file);
+    });
+
+    const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
+    const totalPages = pdf.numPages;
+    let fullText = '';
+
+    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n\n';
+    }
+
+    return preprocessText(fullText);
+  } catch (error) {
+    console.error('PDF处理错误:', error);
+    throw new Error(`PDF处理失败: ${error.message}`);
+  }
 };
 
 function App() {
@@ -104,7 +179,7 @@ function App() {
 
   // 修改文件处理逻辑
   const handleFile = async (file, index) => {
-    if (file && file.type.startsWith('image/')) {
+    if (file.type.startsWith('image/')) {
       try {
         setIsStreaming(true);
         setStreamingText('');
@@ -127,7 +202,7 @@ function App() {
 
           const imagePart = await fileToGenerativePart(file);
 
-          // 将规则单独提取出来
+          // 表格识别规则
           const rulesPrompt = `
           请识别图片中的文字内容，严格按照以下规则输出：
 
@@ -148,7 +223,7 @@ function App() {
              - 专业术语和特定名词需要准确识别
 
           4. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
-             | DESCRIPTION    | RATE    | HOURS | AMOUNT   |
+             | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
              |---------------|---------|-------|----------|
              | Copy Writing  | $50/hr  | 4     | $200.00  |
              | Website Design| $50/hr  | 2     | $100.00  |   
@@ -171,7 +246,7 @@ function App() {
             fullText += chunkText;
 
             // 确保每个分段之间有两个换行符
-            const formattedText = fullText.replace(/\n+/g, '\n\n');
+            const formattedText = preprocessText(fullText);
 
             setStreamingText(formattedText);
             setResults(prevResults => {
@@ -217,7 +292,7 @@ function App() {
                   fullText += data.text;
 
                   // 确保每个分段之间有两个换行符
-                  const formattedText = fullText.replace(/\n+/g, '\n\n');
+                  const formattedText = preprocessText(fullText);
 
                   setStreamingText(formattedText);
                   setResults(prevResults => {
@@ -243,6 +318,25 @@ function App() {
           return newResults;
         });
         setIsStreaming(false);
+      }
+    } else if (file.type === 'application/pdf') {
+      try {
+        setIsLoading(true);
+        const pdfText = await handlePdfFile(file, index);
+        setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[index] = pdfText;
+          return newResults;
+        });
+      } catch (error) {
+        console.error('PDF处理错误:', error);
+        setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[index] = `PDF处理失败: ${error.message}`;
+          return newResults;
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -604,7 +698,7 @@ function App() {
               <input
                 id="file-input"
                 type="file"
-                accept="image/*"
+                accept="image/*,application/pdf"
                 onChange={handleImageUpload}
                 multiple
                 hidden
@@ -753,6 +847,17 @@ function App() {
                     <ReactMarkdown
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
+                      components={{
+                        table: ({ node, ...props }) => (
+                          <table className="markdown-table" {...props} />
+                        ),
+                        th: ({ node, ...props }) => (
+                          <th className="markdown-th" {...props} />
+                        ),
+                        td: ({ node, ...props }) => (
+                          <td className="markdown-td" {...props} />
+                        ),
+                      }}
                     >
                       {streamingText}
                     </ReactMarkdown>
