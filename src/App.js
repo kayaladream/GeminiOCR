@@ -6,11 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
-import pdfjsLib from 'pdfjs-dist/build/pdf';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
-
-// 设置 pdfjs-dist 的 worker 路径
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+import pdfjs from 'pdfjs-dist';
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -79,8 +75,13 @@ const preprocessText = (text) => {
 // 处理 PDF 文件
 const handlePdfFile = async (file, index) => {
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    const fileReader = new FileReader();
+    const pdfData = await new Promise((resolve) => {
+      fileReader.onload = () => resolve(fileReader.result);
+      fileReader.readAsArrayBuffer(file);
+    });
+
+    const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
     const totalPages = pdf.numPages;
     let fullText = '';
 
@@ -229,6 +230,7 @@ function App() {
              - 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
              - 金额部分需包含货币符号以及小数点
              - 若识别到表格，也不能忽略表格外的文字
+             - 以上要求须综合运用，完整输出图片中全部文本信息
 
           5. 分段要求：
              - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
