@@ -6,7 +6,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
-import pdfjs from 'pdfjs-dist';
+import pdfjsLib from 'pdfjs-dist/build/pdf';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+
+// 设置 pdfjs-dist 的 worker 路径
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -75,13 +79,8 @@ const preprocessText = (text) => {
 // 处理 PDF 文件
 const handlePdfFile = async (file, index) => {
   try {
-    const fileReader = new FileReader();
-    const pdfData = await new Promise((resolve) => {
-      fileReader.onload = () => resolve(fileReader.result);
-      fileReader.readAsArrayBuffer(file);
-    });
-
-    const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     const totalPages = pdf.numPages;
     let fullText = '';
 
