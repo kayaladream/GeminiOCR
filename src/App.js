@@ -61,8 +61,9 @@ const preprocessText = (text) => {
   // 处理数字序号和公式之间的格式
   text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
 
-  // 处理多余的空行
-  text = text.replace(/\n{3,}/g, '\n\n');
+  // 处理段落之间的换行
+  text = text.replace(/([^\n])\n([^\n])/g, '$1\n\n$2'); // 确保段落之间有两个换行符
+  text = text.replace(/\n{3,}/g, '\n\n'); // 避免多余的空行
 
   // 还原表格内容
   text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
@@ -254,7 +255,7 @@ function App() {
             fullText += chunkText;
 
             // 确保每个分段之间有两个换行符
-            const formattedText = fullText.replace(/\n+/g, '\n\n');
+            const formattedText = preprocessText(fullText);
 
             setStreamingText(formattedText);
             setResults(prevResults => {
