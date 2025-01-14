@@ -77,8 +77,11 @@ const preprocessText = (text) => {
 };
 
 // 处理 PDF 文件
-const handlePdfFile = async (file, index) => {
+const handlePdfFile = async (file, startIndex) => {
   try {
+    // 加载 PDF.js worker
+    pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+
     const fileReader = new FileReader();
     const pdfData = await new Promise((resolve) => {
       fileReader.onload = () => resolve(fileReader.result);
@@ -87,16 +90,77 @@ const handlePdfFile = async (file, index) => {
 
     const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
     const totalPages = pdf.numPages;
-    let fullText = '';
+    const pdfImages = [];
 
+    // 第一步：先将所有PDF页面转换为图片
     for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n\n';
+      try {
+        console.log('正在转换第', pageNum, '页为图片');
+        const page = await pdf.getPage(pageNum);
+        const viewport = page.getViewport({ scale: 2.0 });
+
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport
+        }).promise;
+
+        const imageData = canvas.toDataURL('image/jpeg', 1.0);
+        pdfImages.push(imageData);
+      } catch (pageError) {
+        console.error(`处理第 ${pageNum} 页时出错:`, pageError);
+        continue; // 继续处理下一页
+      }
     }
 
-    return preprocessText(fullText);
+    // 更新图片预览
+    setImages(prev => {
+      const newImages = [...prev];
+      newImages.splice(startIndex, 1, ...pdfImages);
+      return newImages;
+    });
+
+    // 初始化结果数组
+    setResults(prev => {
+      const newResults = [...prev];
+      newResults.splice(startIndex, 1, ...new Array(pdfImages.length).fill('正在识别中...'));
+      return newResults;
+    });
+
+    // 使用 Promise.all 并行处理所有页面，但限制并发数
+    const batchSize = 6; // 每批处理的页面数
+    const results = [];
+
+    for (let i = 0; i < pdfImages.length; i += batchSize) {
+      try {
+        const batch = pdfImages.slice(i, i + batchSize);
+        const batchPromises = batch.map(async (imageData, batchIndex) => {
+          const pageIndex = i + batchIndex;
+          try {
+            const imageBlob = await fetch(imageData).then(res => res.blob());
+            const imageFile = new File([imageBlob], `page_${pageIndex + 1}.jpg`, { type: 'image/jpeg' });
+            return handleImageFile(imageFile, startIndex + pageIndex);
+          } catch (error) {
+            console.error(`处理PDF第 ${pageIndex + 1} 页图片时出错:`, error);
+            return `第 ${pageIndex + 1} 页处理失败: ${error.message}`;
+          }
+        });
+
+        // 等待当前批次完成
+        const batchResults = await Promise.allSettled(batchPromises);
+        results.push(...batchResults.map(result =>
+          result.status === 'fulfilled' ? result.value : `处理失败: ${result.reason}`
+        ));
+      } catch (batchError) {
+        console.error('处理PDF批次时出错:', batchError);
+      }
+    }
+
+    return results.filter(Boolean).join('\n\n---\n\n');
   } catch (error) {
     console.error('PDF处理错误:', error);
     throw new Error(`PDF处理失败: ${error.message}`);
@@ -118,69 +182,6 @@ function App() {
   const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
 
-  // 修改粘贴事件处理函数
-  useEffect(() => {
-    const handlePaste = async (e) => {
-      e.preventDefault();
-      const items = Array.from(e.clipboardData.items);
-      
-      for (const item of items) {
-        // 处理图片
-        if (item.type.startsWith('image/')) {
-          const file = item.getAsFile();
-          if (file) {
-            setIsLoading(true);
-            try {
-              const imageUrl = URL.createObjectURL(file);
-              const newIndex = images.length;
-              
-              setImages(prev => [...prev, imageUrl]);
-              setResults(prev => [...prev, '']);
-              setCurrentIndex(newIndex);
-              
-              await handleFile(file, newIndex);
-            } catch (error) {
-              console.error('Error processing pasted image:', error);
-            } finally {
-              setIsLoading(false);
-            }
-          }
-        }
-        // 处理文本（可能是链接）
-        else if (item.type === 'text/plain') {
-          item.getAsString(async (text) => {
-            // 如果文本包含 http 或 https，就认为是链接
-            if (text.match(/https?:\/\//i)) {
-              setImageUrl(text);
-              setShowUrlInput(true);
-            }
-          });
-        }
-      }
-    };
-
-    document.addEventListener('paste', handlePaste);
-    return () => {
-      document.removeEventListener('paste', handlePaste);
-    };
-  }, [images.length]);
-
-  // 将文件转换为Base64
-  const fileToGenerativePart = async (file) => {
-    const reader = new FileReader();
-    return new Promise((resolve) => {
-      reader.onloadend = () => {
-        resolve({
-          inlineData: {
-            data: reader.result.split(',')[1],
-            mimeType: file.type
-          },
-        });
-      };
-      reader.readAsDataURL(file);
-    });
-  };
-
   // 修改文件处理逻辑
   const handleFile = async (file, index) => {
     if (file.type.startsWith('image/')) {
@@ -194,7 +195,7 @@ function App() {
         });
 
         let fullText = '';
-        
+
         // 判断是开发环境还是生产环境
         if (process.env.NODE_ENV === 'development') {
           // 开发环境：直接调用 Gemini API
