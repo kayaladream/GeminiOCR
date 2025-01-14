@@ -1,12 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Viewer } from '@bytemd/react';
+import mathPlugin from '@bytemd/plugin-math';
+import gfmPlugin from '@bytemd/plugin-gfm';
+import highlightPlugin from '@bytemd/plugin-highlight';
+import breaksPlugin from '@bytemd/plugin-breaks';
+import frontmatterPlugin from '@bytemd/plugin-frontmatter';
+import 'bytemd/dist/index.css';
 import 'katex/dist/katex.min.css';
-import { InlineMath, BlockMath } from 'react-katex';
-import ReactMarkdown from 'react-markdown';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import 'highlight.js/styles/github.css';
 import './App.css';
-import pdfjs from 'pdfjs-dist';
+import { Document, Page, pdfjs } from 'react-pdf';
+import mammoth from 'mammoth';
+
+// 配置 ByteMD 插件
+const plugins = [
+  mathPlugin({
+    katexOptions: {
+      throwOnError: false,
+      output: 'html',
+      strict: false,
+      trust: true,
+      macros: {
+        '\\f': '#1f(#2)',
+      },
+    }
+  }),
+  gfmPlugin(),
+  highlightPlugin(),
+  breaksPlugin(),
+  frontmatterPlugin()
+];
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -19,7 +43,82 @@ const generationConfig = {
   maxOutputTokens: 8192,
 };
 
-// 预处理函数
+// 添加支持的文件类型配置
+const SUPPORTED_FILE_TYPES = {
+  IMAGE: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
+  PDF: ['application/pdf'],
+  WORD: [
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  ]
+};
+
+// 添加提示文本常量
+const LATEX_EXAMPLES = {
+  FRACTION: '\\\\frac{分子}{分母}',
+  SQRT: '\\\\sqrt{被开方数}',
+  SUPERSCRIPT: 'x^2',
+  SUBSCRIPT: 'x_n',
+  LIMIT: '\\\\lim\\\\limits_{x}',
+};
+
+const CHOICE_EXAMPLE = {
+  QUESTION: '上3个无穷小量按照从低阶到高阶的排序是( )',
+  OPTIONS: [
+    '\\\\alpha_1, \\\\alpha_2, \\\\alpha_3',
+    '\\\\alpha_2, \\\\alpha_1, \\\\alpha_3',
+    '\\\\alpha_1, \\\\alpha_3, \\\\alpha_2',
+    '\\\\alpha_2, \\\\alpha_3, \\\\alpha_1'
+  ]
+};
+
+const COMPLEX_EXAMPLE = {
+  PART1: '\\\\lim\\\\imits_{x \\\\to +\\\\infty} \\\\frac{\\\\arctan 2x - \\\\arctan x}{\\\\frac{\\\\pi}{2} - \\\\arctan x}',
+  PART2: '\\\\lim\\\\imits_{x \\\\to +\\\\infty} x[1-f(x)]',
+  PART3: '\\\\lim\\\\imits_{x \\\\to +\\\\infty} \\\\frac{\\\\arctan 2x + [b-1-bf(x)]\\\\arctan x}{\\\\frac{\\\\pi}{2} - \\\\arctan x}'
+};
+
+const OCR_PROMPT = `
+请识别图片中的文字内容，注意以下要求：
+
+1. 数学公式规范：
+   - 独立的数学公式使用 $$，不要添加额外的换行符
+   - 行内数学公式使用 $，与文字之间需要空格
+   - 保持原文中的变量名称不变
+
+2. 格式要求：
+   - 每个独立公式单独成行
+   - 公式与公式之间要有换行分隔
+   - 公式与文字之间要有空格分隔
+   - 保持原文的段落结构
+
+3. 示例格式：
+   这是一个行内公式 $x^2$ 的例子
+
+   这是一个独立公式：
+   $$f(x) = x^2 + 1$$
+
+   这是下一段文字...
+
+4. 特别注意：
+   - 不要省略任何公式或文字
+   - 保持原文的排版结构
+   - 确保公式之间有正确的分隔
+   - 序号和公式之间要有空格
+
+5. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
+   | DESCRIPTION    | RATE    | HOURS | AMOUNT   |
+   |---------------|---------|-------|----------|
+   | Copy Writing  | $50/hr  | 4     | $200.00  |
+   | Website Design| $50/hr  | 2     | $100.00  |   
+  5.1表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
+  5.2 金额部分需包含货币符号以及小数点
+  5.3 若识别到表格，也不能忽略表格外的文字
+  5.4 以上要求须综合运用，完整输出图片中全部文本信息
+请按照以上规范输出识别结果。
+`;
+
+// 修改预处理函数
 const preprocessText = (text) => {
   if (!text) return '';
 
@@ -61,12 +160,8 @@ const preprocessText = (text) => {
   // 处理数字序号和公式之间的格式
   text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
 
-  // 处理以 "数字 + 句点 + 空格" 开头的行，去掉空格，避免被解析为有序列表
-  text = text.replace(/(\d+)\.\s+/g, '$1.');
-
-  // 处理段落之间的换行
-  text = text.replace(/([^\n])\n([^\n])/g, '$1\n\n$2'); // 确保段落之间有两个换行符
-  text = text.replace(/\n{3,}/g, '\n\n'); // 避免多余的空行
+  // 处理多余的空行
+  text = text.replace(/\n{3,}/g, '\n\n');
 
   // 还原表格内容
   text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
