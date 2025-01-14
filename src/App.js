@@ -167,6 +167,165 @@ const handlePdfFile = async (file, startIndex) => {
   }
 };
 
+// 处理图片文件
+const handleImageFile = async (file, index) => {
+  try {
+    let fullText = '';
+
+    // 判断是开发环境还是生产环境
+    if (process.env.NODE_ENV === 'development') {
+      // 开发环境：直接调用 Gemini API
+      const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({
+        model: "gemini-2.0-flash-exp",
+        generationConfig,
+      });
+
+      const imagePart = await fileToGenerativePart(file);
+
+      // 识别规则
+      const rulesPrompt = `
+      请识别图片中的文字内容，严格按照以下规则输出：
+
+      1. 数学公式规范：
+         - 独立的数学公式使用 $$，不要添加额外的换行符
+         - 行内数学公式使用 $，与文字之间需要空格
+         - 保持原文中的变量名称不变
+
+      2. 格式要求：
+         - 每个独立公式单独成行
+         - 公式与公式之间要有换行分隔
+         - 公式与文字之间要有空格分隔
+         - 保持原文的段落结构
+
+      3. 示例格式：
+         这是一个行内公式 $x^2$ 的例子
+
+         这是一个独立公式：
+         $$f(x) = x^2 + 1$$
+
+         这是下一段文字...
+
+      4. 特别注意：
+         - 不要省略任何公式或文字
+         - 保持原文的排版结构
+         - 确保公式之间有正确的分隔
+         - 序号和公式之间要有空格
+
+      5. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
+         | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+         |---------------|---------|-------|----------|
+         | Copy Writing  | $50/hr  | 4     | $200.00  |
+         | Website Design| $50/hr  | 2     | $100.00  |   
+         - 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
+         - 金额部分需包含货币符号以及小数点
+         - 若识别到表格，也不能忽略表格外的文字
+
+      6. 分段要求：
+         - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
+
+      7. 直接输出内容，不要添加任何说明
+      `;
+
+      // 将规则和图片部分一起发送
+      const result = await model.generateContentStream([rulesPrompt, imagePart]);
+
+      for await (const chunk of result.stream) {
+        const chunkText = chunk.text();
+        fullText += chunkText;
+
+        // 确保每个分段之间有两个换行符
+        const formattedText = preprocessText(fullText);
+
+        setStreamingText(formattedText);
+        setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[index] = formattedText;
+          return newResults;
+        });
+      }
+    } else {
+      // 生产环境：通过 Vercel API 调用
+      const fileReader = new FileReader();
+      const imageData = await new Promise((resolve) => {
+        fileReader.onloadend = () => {
+          resolve(fileReader.result.split(',')[1]);
+        };
+        fileReader.readAsDataURL(file);
+      });
+
+      const response = await fetch('/api/recognize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageData,
+          mimeType: file.type
+        }),
+      });
+
+      const streamReader = response.body.getReader();
+
+      while (true) {
+        const { done, value } = await streamReader.read();
+        if (done) break;
+
+        const chunk = new TextDecoder().decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              fullText += data.text;
+
+              // 确保每个分段之间有两个换行符
+              const formattedText = preprocessText(fullText);
+
+              setStreamingText(formattedText);
+              setResults(prevResults => {
+                const newResults = [...prevResults];
+                newResults[index] = formattedText;
+                return newResults;
+              });
+            } catch (e) {
+              console.error('Error parsing chunk:', e);
+            }
+          }
+        }
+      }
+    }
+
+    setIsStreaming(false);
+
+  } catch (error) {
+    console.error('Error details:', error);
+    setResults(prevResults => {
+      const newResults = [...prevResults];
+      newResults[index] = `识别出错,请重试 (${error.message})`;
+      return newResults;
+    });
+    setIsStreaming(false);
+  }
+};
+
+// 将文件转换为Base64
+const fileToGenerativePart = async (file) => {
+  const reader = new FileReader();
+  return new Promise((resolve) => {
+    reader.onloadend = () => {
+      resolve({
+        inlineData: {
+          data: reader.result.split(',')[1],
+          mimeType: file.type
+        },
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+};
+
 function App() {
   const [images, setImages] = useState([]);
   const [results, setResults] = useState([]);
@@ -185,153 +344,7 @@ function App() {
   // 修改文件处理逻辑
   const handleFile = async (file, index) => {
     if (file.type.startsWith('image/')) {
-      try {
-        setIsStreaming(true);
-        setStreamingText('');
-        setResults(prev => {
-          const newResults = [...prev];
-          newResults[index] = '';
-          return newResults;
-        });
-
-        let fullText = '';
-
-        // 判断是开发环境还是生产环境
-        if (process.env.NODE_ENV === 'development') {
-          // 开发环境：直接调用 Gemini API
-          const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
-          const model = genAI.getGenerativeModel({
-            model: "gemini-2.0-flash-exp",
-            generationConfig,
-          });
-
-          const imagePart = await fileToGenerativePart(file);
-
-          // 识别规则
-          const rulesPrompt = `
-          请识别图片中的文字内容，严格按照以下规则输出：
-
-          1. 数学公式规范：
-             - 独立的数学公式使用 $$，不要添加额外的换行符
-             - 行内数学公式使用 $，与文字之间需要空格
-             - 保持原文中的变量名称不变
-
-          2. 格式要求：
-             - 每个独立公式单独成行
-             - 公式与公式之间要有换行分隔
-             - 公式与文字之间要有空格分隔
-             - 保持原文的段落结构
-
-          3. 示例格式：
-             这是一个行内公式 $x^2$ 的例子
-
-             这是一个独立公式：
-             $$f(x) = x^2 + 1$$
-
-             这是下一段文字...
-
-          4. 特别注意：
-             - 不要省略任何公式或文字
-             - 保持原文的排版结构
-             - 确保公式之间有正确的分隔
-             - 序号和公式之间要有空格
-
-          5. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
-             | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
-             |---------------|---------|-------|----------|
-             | Copy Writing  | $50/hr  | 4     | $200.00  |
-             | Website Design| $50/hr  | 2     | $100.00  |   
-             - 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
-             - 金额部分需包含货币符号以及小数点
-             - 若识别到表格，也不能忽略表格外的文字
-
-          6. 分段要求：
-             - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
-
-          7. 直接输出内容，不要添加任何说明
-          `;
-
-          // 将规则和图片部分一起发送
-          const result = await model.generateContentStream([rulesPrompt, imagePart]);
-
-          for await (const chunk of result.stream) {
-            const chunkText = chunk.text();
-            fullText += chunkText;
-
-            // 确保每个分段之间有两个换行符
-            const formattedText = preprocessText(fullText);
-
-            setStreamingText(formattedText);
-            setResults(prevResults => {
-              const newResults = [...prevResults];
-              newResults[index] = formattedText;
-              return newResults;
-            });
-          }
-        } else {
-          // 生产环境：通过 Vercel API 调用
-          const fileReader = new FileReader();
-          const imageData = await new Promise((resolve) => {
-            fileReader.onloadend = () => {
-              resolve(fileReader.result.split(',')[1]);
-            };
-            fileReader.readAsDataURL(file);
-          });
-
-          const response = await fetch('/api/recognize', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              imageData,
-              mimeType: file.type
-            }),
-          });
-
-          const streamReader = response.body.getReader();
-
-          while (true) {
-            const { done, value } = await streamReader.read();
-            if (done) break;
-
-            const chunk = new TextDecoder().decode(value);
-            const lines = chunk.split('\n');
-            
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.slice(6));
-                  fullText += data.text;
-
-                  // 确保每个分段之间有两个换行符
-                  const formattedText = preprocessText(fullText);
-
-                  setStreamingText(formattedText);
-                  setResults(prevResults => {
-                    const newResults = [...prevResults];
-                    newResults[index] = formattedText;
-                    return newResults;
-                  });
-                } catch (e) {
-                  console.error('Error parsing chunk:', e);
-                }
-              }
-            }
-          }
-        }
-
-        setIsStreaming(false);
-
-      } catch (error) {
-        console.error('Error details:', error);
-        setResults(prevResults => {
-          const newResults = [...prevResults];
-          newResults[index] = `识别出错,请重试 (${error.message})`;
-          return newResults;
-        });
-        setIsStreaming(false);
-      }
+      await handleImageFile(file, index);
     } else if (file.type === 'application/pdf') {
       try {
         setIsLoading(true);
@@ -354,18 +367,6 @@ function App() {
     }
   };
 
-  // 添加并发控制函数
-  const concurrentProcess = async (items, processor, maxConcurrent = 5) => {
-    const results = [];
-    for (let i = 0; i < items.length; i += maxConcurrent) {
-      const chunk = items.slice(i, i + maxConcurrent);
-      const chunkPromises = chunk.map((item, index) => processor(item, i + index));
-      const chunkResults = await Promise.all(chunkPromises);
-      results.push(...chunkResults);
-    }
-    return results;
-  };
-
   // 修改文件上传处理
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
@@ -385,10 +386,10 @@ function App() {
       setCurrentIndex(startIndex);
       
       // 使用并发控制处理文件
-      await concurrentProcess(
-        files,
-        (file, index) => handleFile(file, startIndex + index)
-      );
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        await handleFile(file, startIndex + i);
+      }
     } catch (error) {
       console.error('Error processing files:', error);
     } finally {
@@ -513,10 +514,10 @@ function App() {
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
       
-      await concurrentProcess(
-        files,
-        (file, index) => handleFile(file, startIndex + index)
-      );
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        await handleFile(file, startIndex + i);
+      }
     } catch (error) {
       console.error('Error processing dropped files:', error);
     } finally {
