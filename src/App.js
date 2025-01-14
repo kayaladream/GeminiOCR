@@ -690,7 +690,7 @@ function App() {
           </svg>
         </a>
         <h1>高精度OCR识别</h1>
-        <p>智能识别多国语言及手写字体、表格等。识别出的表格是 Markdown 格式，请到 <a href="https://tableconvert.com/zh-cn/markdown-to-markdown" target="_blank">这里</a>在线转换 </p>
+        <p>智能识别多国语言及手写字体、表格等。识别出的表格是 Markdown 格式，请到 <a href="https://tableconvert.com/zh-cn/markdown-to-markdown" target="_blank">这里</a> 在线转换。 </p>
       </header>
 
       <main className={images.length > 0 ? 'has-content' : ''}>
