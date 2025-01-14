@@ -26,25 +26,15 @@ export default async function handler(req, res) {
       },
     };
 
-    const result = await model.generateContentStream([
+    const result = await model.generateContent([
       "请你识别图片中的文字内容并输出，如果有格式不规整可以根据内容排版，或者单词错误中文词汇错误可以纠正，不要有任何开场白、解释、描述、总结或结束语。",
       imagePart
     ]);
 
-    // 设置响应头以支持流式传输
-    res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
-    });
+    const response = await result.response;
+    const text = response.text();
 
-    // 流式传输结果
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
-    }
-
-    res.end();
+    res.status(200).json({ text });
   } catch (error) {
     console.error('Error:', error);
     res.status(500).json({ error: error.message });
