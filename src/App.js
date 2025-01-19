@@ -6,7 +6,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
-import pdfjs from 'pdfjs-dist';
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -74,33 +73,6 @@ const preprocessText = (text) => {
   });
 
   return text.trim();
-};
-
-// 处理 PDF 文件
-const handlePdfFile = async (file, index) => {
-  try {
-    const fileReader = new FileReader();
-    const pdfData = await new Promise((resolve) => {
-      fileReader.onload = () => resolve(fileReader.result);
-      fileReader.readAsArrayBuffer(file);
-    });
-
-    const pdf = await pdfjs.getDocument({ data: pdfData }).promise;
-    const totalPages = pdf.numPages;
-    let fullText = '';
-
-    for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      fullText += pageText + '\n\n';
-    }
-
-    return preprocessText(fullText);
-  } catch (error) {
-    console.error('PDF处理错误:', error);
-    throw new Error(`PDF处理失败: ${error.message}`);
-  }
 };
 
 function App() {
@@ -330,25 +302,6 @@ function App() {
           return newResults;
         });
         setIsStreaming(false);
-      }
-    } else if (file.type === 'application/pdf') {
-      try {
-        setIsLoading(true);
-        const pdfText = await handlePdfFile(file, index);
-        setResults(prevResults => {
-          const newResults = [...prevResults];
-          newResults[index] = pdfText;
-          return newResults;
-        });
-      } catch (error) {
-        console.error('PDF处理错误:', error);
-        setResults(prevResults => {
-          const newResults = [...prevResults];
-          newResults[index] = `PDF处理失败: ${error.message}`;
-          return newResults;
-        });
-      } finally {
-        setIsLoading(false);
       }
     }
   };
@@ -710,7 +663,7 @@ function App() {
               <input
                 id="file-input"
                 type="file"
-                accept="image/*,application/pdf"
+                accept="image/*"
                 onChange={handleImageUpload}
                 multiple
                 hidden
