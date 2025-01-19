@@ -63,6 +63,23 @@ const preprocessText = (text) => {
   // 处理以 "数字 + 句点 + 空格" 开头的行，去掉空格，避免被解析为有序列表
   text = text.replace(/(\d+)\.\s+/g, '$1.');
 
+  // 处理以 "数字 + 右括号 + 空格" 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/(\d+)\)\s+/g, '$1)');
+
+  // 处理以 "- " 开头的行，去掉空格，避免被解析为无序列表
+  text = text.replace(/-\s+/g, '-');
+
+  // 处理以 "* " 开头的行，去掉空格，避免被解析为无序列表
+  text = text.replace(/\*\s+/g, '*');
+
+  // 处理以 "+ " 开头的行，去掉空格，避免被解析为无序列表
+  text = text.replace(/\+\s+/g, '+');
+
+  // 处理任务列表格式，去掉空格和方括号
+  text = text.replace(/-\s*\[\s*\]\s*/g, '-');
+  text = text.replace(/\*\s*\[\s*\]\s*/g, '*');
+  text = text.replace(/\+\s*\[\s*\]\s*/g, '+');
+
   // 处理段落之间的换行
   text = text.replace(/([^\n])\n([^\n])/g, '$1\n\n$2'); // 确保段落之间有两个换行符
   text = text.replace(/\n{3,}/g, '\n\n'); // 避免多余的空行
