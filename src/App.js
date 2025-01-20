@@ -6,6 +6,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.entry';
+
+// 配置 pdf.js 的 Worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
@@ -90,6 +95,33 @@ const preprocessText = (text) => {
   });
 
   return text.trim();
+};
+
+// PDF 文件解析函数
+const loadPdf = async (file) => {
+  try {
+    // 将文件转换为 ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // 加载 PDF 文件
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
+
+    let fullText = '';
+    
+    // 逐页提取文本
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    return fullText;
+  } catch (error) {
+    console.error('Error loading PDF:', error);
+    throw error;
+  }
 };
 
 function App() {
@@ -319,6 +351,25 @@ function App() {
           return newResults;
         });
         setIsStreaming(false);
+      }
+    } else if (file.type === 'application/pdf') {
+      try {
+        setIsLoading(true);
+        const text = await loadPdf(file); // 调用 PDF 解析函数
+        setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[index] = text; // 将解析结果保存到状态中
+          return newResults;
+        });
+      } catch (error) {
+        console.error('Error processing PDF:', error);
+        setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[index] = `识别出错,请重试 (${error.message})`;
+          return newResults;
+        });
+      } finally {
+        setIsLoading(false);
       }
     }
   };
@@ -675,12 +726,12 @@ function App() {
           >
             <div className="upload-container">
               <label className="upload-button" htmlFor="file-input">
-                {images.length > 0 ? '重新上传' : '上传图片'}
+                {images.length > 0 ? '重新上传' : '上传图片或PDF'}
               </label>
               <input
                 id="file-input"
                 type="file"
-                accept="image/*"
+                accept="image/*, application/pdf"
                 onChange={handleImageUpload}
                 multiple
                 hidden
@@ -709,7 +760,7 @@ function App() {
             )}
             
             {!images.length > 0 && !showUrlInput && (
-              <p className="upload-hint">或将图片拖放到此处</p>
+              <p className="upload-hint">或将图片/PDF拖放到此处</p>
             )}
           </div>
           
@@ -786,44 +837,6 @@ function App() {
                         newResults[currentIndex] = newText;
                         return newResults;
                       });
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Backspace') {
-                        const selection = window.getSelection();
-                        if (selection.isCollapsed && selection.rangeCount > 0) {
-                          const range = selection.getRangeAt(0);
-                          const { startContainer, startOffset } = range;
-
-                          // 如果光标位于段落开头
-                          if (startOffset === 0 && startContainer.nodeType === Node.TEXT_NODE) {
-                            e.preventDefault(); // 阻止默认删除行为
-
-                            // 获取当前段落
-                            const currentParagraph = startContainer.parentElement;
-
-                            // 获取上一段落
-                            const previousParagraph = currentParagraph.previousElementSibling;
-
-                            if (previousParagraph) {
-                              // 将当前段落的内容合并到上一段落
-                              const previousText = previousParagraph.textContent;
-                              const currentText = currentParagraph.textContent;
-                              previousParagraph.textContent = previousText + currentText;
-
-                              // 删除当前段落
-                              currentParagraph.remove();
-
-                              // 更新状态
-                              const newText = e.currentTarget.textContent;
-                              setResults(prevResults => {
-                                const newResults = [...prevResults];
-                                newResults[currentIndex] = newText;
-                                return newResults;
-                              });
-                            }
-                          }
-                        }
-                      }
                     }}
                   >
                     <ReactMarkdown
