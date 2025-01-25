@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -15,6 +16,86 @@ const generationConfig = {
   topP: 1,
   topK: 1,
   maxOutputTokens: 8192,
+};
+
+// 预处理函数
+const preprocessText = (text) => {
+  if (!text) return '';
+
+  // 临时保存表格内容
+  const tables = [];
+  text = text.replace(/(\|[^\n]+\|\n\|[-|\s]+\|\n\|[^\n]+\|(\n|$))+/g, (match) => {
+    tables.push(match);
+    return `__TABLE_${tables.length - 1}__`;
+  });
+
+  // 标准化数学公式分隔符
+  text = text.replace(/\\\\\(/g, '$');
+  text = text.replace(/\\\\\)/g, '$');
+  text = text.replace(/\\\\\[/g, '$$');
+  text = text.replace(/\\\\\]/g, '$$');
+
+  // 移除所有的 ``` 标记
+  text = text.replace(/```[\s\S]*?```/g, (match) => {
+    const content = match.slice(3, -3).trim();
+    return content;
+  });
+
+  // 移除单独的 ``` 标记和语言标识
+  text = text.replace(/```\w*\n?/g, '');
+
+  // 处理数字序号后的换行问题
+  text = text.replace(/(\d+)\.\s*\n+/g, '$1. ');
+
+  // 处理块级公式的格式
+  text = text.replace(/\n*\$\$\s*([\s\S]*?)\s*\$\$\n*/g, (match, formula) => {
+    return `\n\n$$${formula.trim()}$$\n\n`;
+  });
+
+  // 处理行内公式的格式
+  text = text.replace(/\$\s*(.*?)\s*\$/g, (match, formula) => {
+    return `$${formula.trim()}$`;
+  });
+
+  // 处理数字序号和公式之间的格式
+  text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
+
+  // 处理以 "数字 + 句点 + 空格" 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/(\d+)\.\s+/g, '$1.');
+
+  // 处理以 "数字 + 右括号 + 空格" 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/(\d+)\)\s+/g, '$1)');
+
+  // 处理以 "- " 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/-\s+/g, '-');
+
+  // 处理以 "* " 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/\*\s+/g, '*');
+
+  // 处理以 "+ " 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/\+\s+/g, '+');
+
+  // 处理以 "> " 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/\>\s+/g, '>');
+
+  // 处理以 "# " 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/\#\s+/g, '#');
+
+  // 处理任务列表格式，去掉空格和方括号
+  text = text.replace(/-\s*\[\s*\]\s*/g, '-');
+  text = text.replace(/\*\s*\[\s*\]\s*/g, '*');
+  text = text.replace(/\+\s*\[\s*\]\s*/g, '+');
+
+  // 处理段落之间的换行
+  text = text.replace(/([^\n])\n([^\n])/g, '$1\n\n$2'); // 确保段落之间有两个换行符
+  text = text.replace(/\n{3,}/g, '\n\n'); // 避免多余的空行
+
+  // 还原表格内容
+  text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
+    return tables[parseInt(index)];
+  });
+
+  return text.trim();
 };
 
 function App() {
@@ -172,7 +253,7 @@ function App() {
             fullText += chunkText;
 
             // 确保每个分段之间有两个换行符
-            const formattedText = fullText.replace(/([^\n])\n([^\n])/g, '$1\n\n$2');
+            const formattedText = preprocessText(fullText);
 
             setStreamingText(formattedText);
             setResults(prevResults => {
@@ -218,7 +299,7 @@ function App() {
                   fullText += data.text;
 
                   // 确保每个分段之间有两个换行符
-                  const formattedText = fullText.replace(/([^\n])\n([^\n])/g, '$1\n\n$2');
+                  const formattedText = preprocessText(fullText);
 
                   setStreamingText(formattedText);
                   setResults(prevResults => {
