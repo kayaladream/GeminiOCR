@@ -76,7 +76,7 @@ const preprocessText = (text) => {
   text = text.replace(/\+\s+/g, '+');
 
   // 处理以 "> " 开头的行，去掉空格，避免被解析为有序列表
-  text = text.replace(/\>\s+/g, '>');
+  text = text.replace(/>\s+/g, '>');
 
   // 处理以 "# " 开头的行，去掉空格，避免被解析为有序列表
   text = text.replace(/\#\s+/g, '#');
