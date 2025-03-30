@@ -1,6 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// 复杂提示词（直接从前端复制过来，处理数学公式/表格等）
 const ADVANCED_PROMPT = `
 1. 数学公式规范：
    - 独立的数学公式使用 $$，不要添加额外的换行符
@@ -43,14 +42,12 @@ const ADVANCED_PROMPT = `
 `;
 
 export default async function handler(req, res) {
-  // 1. 只允许POST请求
   if (req.method !== 'POST') {
     console.error('[ERROR] 非法请求方法:', req.method);
     return res.status(405).json({ error: '只支持POST请求' });
   }
 
   try {
-    // 2. 获取图片数据
     const { imageData, mimeType } = req.body;
     if (!imageData || !mimeType) {
       console.error('[ERROR] 缺少参数:', { imageData: !!imageData, mimeType: !!mimeType });
@@ -59,9 +56,9 @@ export default async function handler(req, res) {
 
     console.log('[LOG] 收到请求，图片类型:', mimeType);
 
-    // 3. 初始化Gemini模型
+    // 初始化模型（模型信息日志）
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
+    const modelConfig = {
       model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
         temperature: 1,
@@ -69,9 +66,10 @@ export default async function handler(req, res) {
         topK: 40,
         maxOutputTokens: 8192,
       },
-    });
+    };
+    console.log('[LOG] 使用的模型配置:', JSON.stringify(modelConfig, null, 2)); 
+    const model = genAI.getGenerativeModel(modelConfig);
 
-    // 4. 构造图片数据
     const imagePart = {
       inlineData: {
         data: imageData,
@@ -79,19 +77,18 @@ export default async function handler(req, res) {
       },
     };
 
-    console.log('[LOG] 发送给Gemini的提示词:', ADVANCED_PROMPT.slice(0, 100) + '...'); // 只打印前100字符避免日志过长
+    console.log('[LOG] 发送给Gemini的提示词（前100字符）:', ADVANCED_PROMPT.slice(0, 100) + '...');
 
-    // 5. 调用Gemini模型
+    // 调用模型（模型名称日志）
+    console.log('[LOG] 开始调用模型:', modelConfig.model); 
     const result = await model.generateContentStream([ADVANCED_PROMPT, imagePart]);
 
-    // 6. 设置流式响应
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
 
-    // 7. 流式传输结果
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
@@ -101,11 +98,9 @@ export default async function handler(req, res) {
     console.log('[LOG] 请求处理完成');
 
   } catch (error) {
-    // 错误处理
     console.error('[ERROR] 处理失败:', error.message);
-    console.error(error.stack); // 打印错误堆栈
-
-    // 返回用户友好的错误信息
+    console.error(error.stack);
+    
     let errorMessage = '处理图片时出错';
     if (error.message.includes('API_KEY')) {
       errorMessage = '服务器配置错误（API密钥无效）';
@@ -115,7 +110,7 @@ export default async function handler(req, res) {
 
     res.status(500).json({ 
       error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : null // 开发环境显示详细错误
+      details: process.env.NODE_ENV === 'development' ? error.message : null
     });
   }
 }
