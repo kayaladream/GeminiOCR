@@ -1,13 +1,65 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+// 复杂提示词（直接从前端复制过来，处理数学公式/表格等）
+const ADVANCED_PROMPT = `
+1. 数学公式规范：
+   - 独立的数学公式使用 $$，不要添加额外的换行符
+   - 行内数学公式使用 $，与文字之间需要空格
+   - 保持原文中的变量名称不变
+
+2. 格式要求：
+   - 每个独立公式单独成行
+   - 公式与公式之间要有换行分隔
+   - 公式与文字之间要有空格分隔
+   - 保持原文的段落结构
+
+3. 示例格式：
+   这是一个行内公式 $x^2$ 的例子
+
+   这是一个独立公式：
+   $$f(x) = x^2 + 1$$
+
+   这是下一段文字...
+
+4. 特别注意：
+   - 不要省略任何公式或文字
+   - 保持原文的排版结构
+   - 确保公式之间有正确的分隔
+   - 序号和公式之间要有空格
+
+5. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
+   | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+   |---------------|---------|-------|----------|
+   | Copy Writing  | $50/hr  | 4     | $200.00  |
+   | Website Design| $50/hr  | 2     | $100.00  |   
+   - 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
+   - 金额部分需包含货币符号以及小数点
+   - 若识别到表格，也不能忽略表格外的文字
+
+6. 分段要求：
+   - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
+
+7. 直接输出内容，不要添加任何说明
+`;
+
 export default async function handler(req, res) {
+  // 1. 只允许POST请求
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    console.error('[ERROR] 非法请求方法:', req.method);
+    return res.status(405).json({ error: '只支持POST请求' });
   }
 
   try {
+    // 2. 获取图片数据
     const { imageData, mimeType } = req.body;
+    if (!imageData || !mimeType) {
+      console.error('[ERROR] 缺少参数:', { imageData: !!imageData, mimeType: !!mimeType });
+      return res.status(400).json({ error: '缺少imageData或mimeType参数' });
+    }
 
+    console.log('[LOG] 收到请求，图片类型:', mimeType);
+
+    // 3. 初始化Gemini模型
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-pro-exp-03-25",
@@ -19,6 +71,7 @@ export default async function handler(req, res) {
       },
     });
 
+    // 4. 构造图片数据
     const imagePart = {
       inlineData: {
         data: imageData,
@@ -26,27 +79,43 @@ export default async function handler(req, res) {
       },
     };
 
-    const result = await model.generateContentStream([
-      "请你识别图片中的文字内容并输出，如果有格式不规整可以根据内容排版，或者单词错误中文词汇错误可以纠正，但纠正后的词要用“加粗”方式显示文本。不要有任何开场白、解释、描述、总结或结束语。",
-      imagePart
-    ]);
+    console.log('[LOG] 发送给Gemini的提示词:', ADVANCED_PROMPT.slice(0, 100) + '...'); // 只打印前100字符避免日志过长
 
-    // 设置响应头以支持流式传输
+    // 5. 调用Gemini模型
+    const result = await model.generateContentStream([ADVANCED_PROMPT, imagePart]);
+
+    // 6. 设置流式响应
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
 
-    // 流式传输结果
+    // 7. 流式传输结果
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
     }
 
     res.end();
+    console.log('[LOG] 请求处理完成');
+
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ error: error.message });
+    // 错误处理
+    console.error('[ERROR] 处理失败:', error.message);
+    console.error(error.stack); // 打印错误堆栈
+
+    // 返回用户友好的错误信息
+    let errorMessage = '处理图片时出错';
+    if (error.message.includes('API_KEY')) {
+      errorMessage = '服务器配置错误（API密钥无效）';
+    } else if (error.message.includes('image')) {
+      errorMessage = '图片格式不支持';
+    }
+
+    res.status(500).json({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : null // 开发环境显示详细错误
+    });
   }
 }
