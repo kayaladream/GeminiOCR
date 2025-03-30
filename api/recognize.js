@@ -26,11 +26,6 @@ export default async function handler(req, res) {
       },
     };
 
-    const result = await model.generateContentStream([
-      "请你识别图片中的文字内容并输出，如果有格式不规整可以根据内容排版，或者单词错误中文词汇错误可以纠正，但纠正后的词要用“加粗”方式显示文本。不要有任何开场白、解释、描述、总结或结束语。",
-      imagePart
-    ]);
-
     // 设置响应头以支持流式传输
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
