@@ -1,65 +1,37 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// 复杂提示词（直接从前端复制过来，处理数学公式/表格等）
-const ADVANCED_PROMPT = `
-1. 数学公式规范：
-   - 独立的数学公式使用 $$，不要添加额外的换行符
-   - 行内数学公式使用 $，与文字之间需要空格
-   - 保持原文中的变量名称不变
-
-2. 格式要求：
-   - 每个独立公式单独成行
-   - 公式与公式之间要有换行分隔
-   - 公式与文字之间要有空格分隔
-   - 保持原文的段落结构
-
-3. 示例格式：
-   这是一个行内公式 $x^2$ 的例子
-
-   这是一个独立公式：
-   $$f(x) = x^2 + 1$$
-
-   这是下一段文字...
-
-4. 特别注意：
-   - 不要省略任何公式或文字
-   - 保持原文的排版结构
-   - 确保公式之间有正确的分隔
-   - 序号和公式之间要有空格
-
-5. 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
-   | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
-   |---------------|---------|-------|----------|
-   | Copy Writing  | $50/hr  | 4     | $200.00  |
-   | Website Design| $50/hr  | 2     | $100.00  |   
-   - 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
-   - 金额部分需包含货币符号以及小数点
-   - 若识别到表格，也不能忽略表格外的文字
-
-6. 分段要求：
-   - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
-
-7. 直接输出内容，不要添加任何说明
-`;
+// 配置日志前缀（方便筛选）
+const LOG_PREFIX = '[OCR-API]';
+const DEBUG_MODE = process.env.NODE_ENV === 'development'; // 开发环境显示更详细日志
 
 export default async function handler(req, res) {
-  // 1. 只允许POST请求
+  const startTime = Date.now();
+  
+  // 1. 记录请求开始
+  console.log(`${LOG_PREFIX} 收到请求 | 方法: ${req.method} | 路径: ${req.url}`);
+  if (DEBUG_MODE) {
+    console.debug(`${LOG_PREFIX} 请求头:`, JSON.stringify(req.headers, null, 2));
+  }
+
+  // 2. 检查请求方法
   if (req.method !== 'POST') {
-    console.error('[ERROR] 非法请求方法:', req.method);
-    return res.status(405).json({ error: '只支持POST请求' });
+    const errorMsg = `${LOG_PREFIX} 不允许的请求方法: ${req.method}`;
+    console.error(errorMsg);
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    // 2. 获取图片数据
+    // 3. 获取并验证请求体
     const { imageData, mimeType } = req.body;
     if (!imageData || !mimeType) {
-      console.error('[ERROR] 缺少参数:', { imageData: !!imageData, mimeType: !!mimeType });
-      return res.status(400).json({ error: '缺少imageData或mimeType参数' });
+      const errorMsg = `${LOG_PREFIX} 缺少必要参数 | imageData: ${!!imageData} | mimeType: ${!!mimeType}`;
+      console.error(errorMsg);
+      return res.status(400).json({ error: 'Missing imageData or mimeType' });
     }
 
-    console.log('[LOG] 收到请求，图片类型:', mimeType);
+    console.log(`${LOG_PREFIX} 开始处理 | 图片类型: ${mimeType} | 数据长度: ${imageData.length}`);
 
-    // 3. 初始化Gemini模型
+    // 4. 初始化模型
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
       model: "gemini-2.5-pro-exp-03-25",
@@ -71,7 +43,7 @@ export default async function handler(req, res) {
       },
     });
 
-    // 4. 构造图片数据
+    // 5. 构造图片数据
     const imagePart = {
       inlineData: {
         data: imageData,
@@ -79,43 +51,68 @@ export default async function handler(req, res) {
       },
     };
 
-    console.log('[LOG] 发送给Gemini的提示词:', ADVANCED_PROMPT.slice(0, 100) + '...'); // 只打印前100字符避免日志过长
+    // 6. 定义提示词（重点记录部分）
+    const prompt = "请你识别图片中的文字内容并输出，如果有格式不规整可以根据内容排版，或者单词错误中文词汇错误可以纠正，但纠正后的词要用“加粗”方式显示文本。不要有任何开场白、解释、描述、总结或结束语。";
+    
+    // 详细记录提示词和图片元数据
+    console.log(`${LOG_PREFIX} 发送给Gemini的提示词:\n${'='.repeat(30)}\n${prompt}\n${'='.repeat(30)}`);
+    if (DEBUG_MODE) {
+      console.debug(`${LOG_PREFIX} 图片元数据:`, {
+        mimeType,
+        dataPrefix: imageData.slice(0, 50) + '...'
+      });
+    }
 
-    // 5. 调用Gemini模型
-    const result = await model.generateContentStream([ADVANCED_PROMPT, imagePart]);
+    // 7. 调用Gemini API
+    const apiStartTime = Date.now();
+    console.log(`${LOG_PREFIX} 开始调用Gemini API...`);
+    
+    const result = await model.generateContentStream([prompt, imagePart]);
 
-    // 6. 设置流式响应
+    // 8. 设置流式响应
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection': 'keep-alive',
     });
 
-    // 7. 流式传输结果
+    // 9. 流式传输处理
+    let chunkCount = 0;
     for await (const chunk of result.stream) {
       const chunkText = chunk.text();
       res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
+      chunkCount++;
+      
+      if (DEBUG_MODE) {
+        console.debug(`${LOG_PREFIX} 收到数据块[${chunkCount}]:`, chunkText.slice(0, 100) + (chunkText.length > 100 ? '...' : ''));
+      }
     }
 
+    // 10. 请求完成
+    const duration = Date.now() - startTime;
+    console.log(`${LOG_PREFIX} 请求完成 | 耗时: ${duration}ms | 数据块数量: ${chunkCount}`);
     res.end();
-    console.log('[LOG] 请求处理完成');
 
   } catch (error) {
-    // 错误处理
-    console.error('[ERROR] 处理失败:', error.message);
-    console.error(error.stack); // 打印错误堆栈
+    // 错误处理（带详细日志）
+    const errorLog = {
+      message: error.message,
+      stack: error.stack,
+      request: {
+        method: req.method,
+        headers: req.headers,
+        body: DEBUG_MODE ? req.body : '[PROD REDACTED]'
+      }
+    };
+    
+    console.error(`${LOG_PREFIX} 处理失败!\n${'='.repeat(50)}`);
+    console.error(errorLog);
+    console.error(`${'='.repeat(50)}`);
 
-    // 返回用户友好的错误信息
-    let errorMessage = '处理图片时出错';
-    if (error.message.includes('API_KEY')) {
-      errorMessage = '服务器配置错误（API密钥无效）';
-    } else if (error.message.includes('image')) {
-      errorMessage = '图片格式不支持';
-    }
-
+    // 返回错误响应
     res.status(500).json({ 
-      error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? error.message : null // 开发环境显示详细错误
+      error: 'Internal Server Error',
+      requestId: req.headers['x-request-id'] || null
     });
   }
 }
