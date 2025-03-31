@@ -81,6 +81,9 @@ const preprocessText = (text) => {
   // 处理以 "# " 开头的行，去掉空格，避免被解析为有序列表
   text = text.replace(/\#\s+/g, '#');
 
+  // 处理以 "$ " 开头的行，去掉空格，避免被解析为有序列表
+  text = text.replace(/\$\s+/g, '$');  
+
   // 处理段落之间的换行
   text = text.replace(/([^\n])\n([^\n])/g, '$1\n\n$2'); // 确保段落之间有两个换行符
   text = text.replace(/\n{3,}/g, '\n\n'); // 避免多余的空行
