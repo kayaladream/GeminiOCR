@@ -52,7 +52,7 @@ export default async function handler(req, res) {
     // 初始化模型（模型信息日志）
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const modelConfig = {
-      model: "gemini-2.5-pro-exp-03-25",
+      model: "gemini-2.0-flash",
       generationConfig: {
         temperature: 1,
         topP: 0.95,
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
       },
     };
 
-    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 15) + '...');
+    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 16) + '...');
 
     // 调用模型（模型名称日志）
     console.log('[LOG] 开始调用模型:', modelConfig.model); 
