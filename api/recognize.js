@@ -74,6 +74,9 @@ export default async function handler(req, res) {
 
     // 调用模型（模型名称日志）
     console.log('[LOG] 开始调用模型:', modelConfig.model); 
+    
+    // 注释掉流式传输代码，改为一次性获取结果
+    /*
     const result = await model.generateContentStream([ADVANCED_PROMPT, imagePart]);
 
     res.writeHead(200, {
@@ -88,7 +91,15 @@ export default async function handler(req, res) {
     }
 
     res.end();
+    */
+    
+    // 添加非流式处理方式
+    const result = await model.generateContent([ADVANCED_PROMPT, imagePart]);
+    const response = await result.response;
+    const text = response.text();
+    
     console.log('[LOG] 请求处理完成');
+    return res.status(200).json({ text });
 
   } catch (error) {
     console.error('[ERROR] 处理失败:', error.message);
