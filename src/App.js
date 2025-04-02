@@ -891,8 +891,9 @@ function App() {
         <p>
             智能识别多国语言及手写字体、表格等。识别出的表格是 Markdown 格式，请到{' '}
             <a href="https://tableconvert.com/zh-cn/markdown-to-markdown" target="_blank" rel="noopener noreferrer">
-                此处
+                这里
             </a>{' '}
+            在线转换。
         </p>
       </header>
 
@@ -912,7 +913,7 @@ function App() {
             <div className="upload-container">
               <label className="upload-button" htmlFor="file-input">
                  {/* 根据是否有图片显示不同文本 */}
-                {images.length > 0 ? '添加图片' : '上传图片'}
+                {images.length > 0 ? '添加<br>图片' : '上传图片'}
               </label>
               <input
                 id="file-input"
