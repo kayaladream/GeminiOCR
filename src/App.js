@@ -207,46 +207,37 @@ function App() {
 
           // 识别规则 (保持不变)
           const rulesPrompt = `
-          Please identify the text content in the image and strictly follow these rules for output:
+          请你识别图片中的文字内容并输出，需遵循以下规范和要求：
 
-          1. Math Formula Specification:
-             - Use $$ for standalone math formulas, without adding extra line breaks.
-             - Use $ for inline math formulas, ensuring spaces around them if adjacent to text.
-             - Keep original variable names.
+          1. 数学公式规范：
+             - 独立的数学公式使用 $$，例如：$$E = mc^2$$
+             - 行内数学公式使用 $，例如：能量公式 $E = mc^2$
+             - 保持原文中的变量名称不变
 
-          2. Formatting Requirements:
-             - Each standalone formula should be on its own line.
-             - Ensure line breaks between formulas.
-             - Ensure spaces separate formulas from text.
-             - Preserve the original paragraph structure.
-
-          3. Example Format:
-             This is an inline formula $x^2$ example.
-
-             This is a standalone formula:
-             $$f(x) = x^2 + 1$$
-
-             This is the next paragraph...
-
-          4. Special Attention:
-             - Do not omit any formulas or text.
-             - Maintain the original layout structure.
-             - Ensure correct separation between formulas.
-             - Ensure space between numbering and formulas.
-
-          5. If the image contains table-like content, use standard Markdown table syntax. Example:
+          2. 表格规范：
+             如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
              | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
              |---------------|---------|-------|----------|
              | Copy Writing  | $50/hr  | 4     | $200.00  |
-             | Website Design| $50/hr  | 2     | $100.00  |
-             - Use "|-" separator row between header and cells, with at least three "-" per column for alignment.
-             - Include currency symbols and decimal points in amounts.
-             - Do not ignore text outside the table if a table is identified.
+             | Website Design| $50/hr  | 2     | $100.00  |   
+             - 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
+             - 金额部分需包含货币符号以及小数点
+             - 若识别到表格，也不能忽略表格外的文字
 
-          6. Paragraph Requirements:
-             - Separate paragraphs with two newline characters for correct Markdown rendering.
+          3. 分段要求：
+             - 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
 
-          7. Output content directly without any explanations.
+          4. 文字识别要求：
+             - 保持原文的排版结构
+             - 保持原文的段落结构
+             - 专业术语和特定名词需要准确识别
+             - 不要将所有以数字、符号开头的段落识别为有序列表，不要应用任何Markdown列表格式
+
+          5. 错误纠正：
+             - 如遇到模糊不清的单词或中文，根据上下文语境进行合理推测和修正
+             - 原图中模糊不清与根据上下文纠正的文字，修正后需要用**加粗**格式显示
+
+          6. 直接输出内容，不要添加任何说明
           `;
 
           // 将规则和图片部分一起发送
@@ -913,7 +904,7 @@ function App() {
             <div className="upload-container">
               <label className="upload-button" htmlFor="file-input">
                  {/* 根据是否有图片显示不同文本 */}
-                {images.length > 0 ? '添加<br>图片' : '上传图片'}
+                {images.length > 0 ? '添加新的图片' : '上传图片'}
               </label>
               <input
                 id="file-input"
