@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
-请你识别图片中的文字内容并输出，需遵循以下规范和要求：
+你是一名专业的OCR识别助手，请你识别图片中的文字内容并输出，需遵循以下规范和要求：
 
 1.  **数学公式规范：**
     *   独立的数学公式使用 $$，例如：$$E = mc^2$$
@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       },
     };
 
-    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 16) + '...');
+    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 30) + '...');
 
     // 调用模型（模型名称日志）
     console.log('[LOG] 开始调用模型:', modelConfig.model); 
