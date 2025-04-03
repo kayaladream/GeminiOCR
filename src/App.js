@@ -198,7 +198,7 @@ function App() {
           // 开发环境：直接调用 Gemini API
           const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
           const model = genAI.getGenerativeModel({
-            model: "gemini-1.5-flash", // 更新的模型名称
+            model: "gemini-2.0-flash", // 模型名称
             generationConfig,
           });
 
