@@ -1,22 +1,22 @@
 # 基于Gemini的高精度OCR识别
 
-一个基于 Google Gemini 2.0的高精度 OCR 文字识别应用，支持多国语言和手写字体识别。
+一个基于 Google Gemini 的高精度 OCR 文字识别应用，支持多国语言和手写字体识别。
 
 ## 功能特点
 
-- 🚀 高精度文字识别
-- 🌍 支持多国语言识别
-- ✍️ 支持手写字体识别
-- 🎨 优雅的渐变动画效果
-- 📱 响应式设计，支持移动端
-- 🖼️ 多种图片输入方式：
+- 高精度文字识别
+- 支持多国语言识别
+- 支持手写字体识别
+- 优雅的渐变动画效果
+- 响应式设计，支持移动端
+- 置信度低的字符加粗标记
+- 智能纠错并标记功能
+- 在 Markdown 窗口直接修改
+- 多种图片输入方式：
   - 文件上传
   - 拖拽上传
   - 粘贴板上传
   - 图片链接上传
-
-## 演示网站
-https://ocr.howen.ink/
 
 ## 部署说明
 
@@ -44,8 +44,8 @@ https://ocr.howen.ink/
 
 1. 克隆项目
 ```bash
-git clone https://github.com/cokice/googleocr-app.git
-cd ocr-app
+git clone https://github.com/kayaladream/GeminiOCR.git
+cd GeminiOCR
 ```
 
 2. 安装依赖
@@ -92,9 +92,12 @@ yarn start
 - 支持多国语言
 - 支持手写体识别
 - 自动优化排版格式
+- 置信度低的字符加粗标记
+- 智能纠错并标记功能
 
 ### 结果展示
 - 支持 Markdown 格式
+- 在 Markdown 窗口直接修改
 - 一键复制识别结果
 - 图片预览功能
 - 多图片导航切换
