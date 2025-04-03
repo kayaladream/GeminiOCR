@@ -76,7 +76,7 @@ export default async function handler(req, res) {
       },
     };
 
-    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 30) + '...');
+    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 31) + '...');
 
     // 调用模型（模型名称日志）
     console.log('[LOG] 开始调用模型:', modelConfig.model); 
