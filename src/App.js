@@ -1,13 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import 'katex/dist/katex.min.css';
-// import { InlineMath, BlockMath } from 'react-katex'; // 如果在其他地方需要，保留此行，否则删除
+import { InlineMath, BlockMath } from 'react-katex';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import './App.css';
 
-// --- (保留从 GoogleGenerativeAI 初始化到 preprocessText 函数的现有代码) ---
 // 初始化 Gemini API
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
 
@@ -117,7 +116,7 @@ function App() {
   const [modalScale, setModalScale] = useState(1);
   // --- 模态框新增状态结束 ---
 
-  // --- (保留现有的粘贴处理 useEffect) ---
+  // --- (粘贴处理 useEffect) ---
   useEffect(() => {
     const handlePaste = async (e) => {
       e.preventDefault();
@@ -162,9 +161,9 @@ function App() {
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-  }, [images.length]); // 保持原有的依赖项
+  }, [images.length]); 
 
-  // --- (保留现有的 fileToGenerativePart 函数) ---
+  // --- (fileToGenerativePart 函数) ---
   const fileToGenerativePart = async (file) => {
     const reader = new FileReader();
     return new Promise((resolve) => {
@@ -180,7 +179,7 @@ function App() {
     });
   };
 
-  // --- (保留现有的 handleFile 函数) ---
+  // --- (handleFile 函数) ---
    const handleFile = async (file, index) => {
     if (file.type.startsWith('image/')) {
       try {
@@ -205,9 +204,9 @@ function App() {
 
           const imagePart = await fileToGenerativePart(file);
 
-          // 识别规则 (保持不变)
+          // 识别规则
           const rulesPrompt = `
-          你是一名专业的OCR识别助手，请你识别图片中的文字内容并输出，需遵循以下规范和要求：
+          请你识别图片中的文字内容并输出，需遵循以下规范和要求：
 
           1.  **数学公式规范：**
               *   独立的数学公式使用 $$，例如：$$E = mc^2$$
@@ -367,7 +366,7 @@ function App() {
     }
   };
 
-  // --- (保留现有的并发处理函数) ---
+  // --- (并发处理函数) ---
   const concurrentProcess = async (items, processor, maxConcurrent = 5) => {
     // const results = []; // 这个 results 似乎没有被使用，可以考虑移除
     let activePromises = 0;
@@ -405,7 +404,7 @@ function App() {
   };
 
 
-  // --- (保留现有的 handleImageUpload 函数) ---
+  // --- (handleImageUpload 函数) ---
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return; // 没有选择文件
@@ -443,7 +442,7 @@ function App() {
   };
 
 
-  // --- (保留现有的图片导航函数) ---
+  // --- (图片导航函数) ---
   const handlePrevImage = () => {
     if (currentIndex > 0 && !isLoading) { // 增加 !isLoading 条件防止加载时切换
       const prevIndex = currentIndex - 1;
@@ -462,7 +461,7 @@ function App() {
     }
   };
 
-  // --- (保留现有的全局拖放 useEffect 和处理函数) ---
+  // --- (全局拖放 useEffect 和处理函数) ---
   useEffect(() => {
     const handleGlobalDragEnter = (e) => {
       e.preventDefault();
@@ -614,7 +613,7 @@ function App() {
     }
   };
 
-  // --- (保留现有的 handleUrlSubmit 函数) ---
+  // --- (handleUrlSubmit 函数) ---
   const handleUrlSubmit = async (e) => {
     e.preventDefault();
     if (!imageUrl) return;
@@ -719,14 +718,14 @@ function App() {
     setShowModal(true);
   };
 
-  // --- (保留现有的 handleCloseModal 函数) ---
+  // --- (handleCloseModal 函数) ---
   const handleCloseModal = () => {
     setShowModal(false);
     // 可选：如果需要，清理模态框状态，尽管在打开时重置通常就足够了
     // setIsDraggingModal(false);
   };
 
-  // --- (保留现有的 handleCopyText 函数) ---
+  // --- (handleCopyText 函数) ---
   const handleCopyText = () => {
     const currentResult = results[currentIndex];
     if (currentResult && !isStreaming) { // 确保有结果且不在流式加载
@@ -739,7 +738,7 @@ function App() {
       // 移除 Markdown 格式（可以根据需要调整这些规则）
       // 顺序很重要，例如先处理加粗再处理斜体
       plainText = plainText
-        .replace(/\$\$(.*?)\$\$/gs, (match, p1) => `\n${p1.trim()}\n`) // 处理块级数学公式（保留内容，加换行）
+        .replace(/\$\$(.*?)\$\$/gs, (match, p1) => `\n${p1.trim()}\n`) // 处理块级数学公式
         .replace(/\$(.*?)\$/g, '$1')        // 处理行内数学公式（仅保留内容）
         .replace(/```[\s\S]*?```/g, '')    // 移除代码块
         .replace(/`([^`]+)`/g, '$1')       // 移除行内代码标记
@@ -802,8 +801,8 @@ function App() {
   // --- 新增: 模态框缩放事件处理函数 ---
   const handleModalWheel = (e) => {
     e.preventDefault(); // 阻止页面滚动
-    // 调整灵敏度 - 数值越小，缩放越精细
-    const zoomSensitivity = 0.001; // <--- 减小了这个值
+    // 调整灵敏度
+    const zoomSensitivity = 0.001; // 数值越小，缩放越精细
     const minScale = 0.1; // 最小缩放比例
     const maxScale = 10; // 最大缩放比例
 
