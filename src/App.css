@@ -523,10 +523,9 @@ main.has-content {
 
 .upload-section.with-image .upload-zone {
   padding: 3rem;
-  margin-bottom: 1.5rem;
-  width: 100%;       /* 宽度 */
+  margin-bottom: 2rem;
   min-height: 100px;  /* 设置最小高度 */
-  border-radius: 20px; /* 设置圆角 */
+  border-radius: 15px; /* 设置圆角 */
   display: flex; /* 保持 flex 布局让内部元素居中等 */
   min-height: auto;
 }
