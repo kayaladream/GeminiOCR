@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
 你是一名专业的OCR识别助手，请你识别图片中的文字内容并输出，需遵循以下规范和要求：
@@ -13,7 +13,7 @@ const ADVANCED_PROMPT = `
       | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
       |---------------|---------|-------|----------|
       | Copy Writing  | $50/hr  | 4     | $200.00  |
-      | Website Design| $50/hr  | 2     | $100.00  |   
+      | Website Design| $50/hr  | 2     | $100.00  |
     *   表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐。
     *   金额部分需包含货币符号以及小数点（如果原文有）。
     *   若识别到表格，也不能忽略表格外的文字。
@@ -34,143 +34,194 @@ const ADVANCED_PROMPT = `
 6.  **上下文校对与纠错：**
     *   在识别完成后，请仔细检查文本内容。
     *   利用上下文信息，修正识别结果中可能存在的错别字、拼写错误或明显的语法错误。
-    *   将你**修正过**的文字或词语用*斜体* (*italic*) 标记出来，以清晰展示修改痕迹。
+    *   将你**修正过**的文字或词语用*斜体* (*italic*) 标记出来，以清晰展示修改痕跡。
 
 7.  **输出要求：**
     *   直接输出处理后的内容，不要添加任何说明、前言或总结。
 `;
 
-// 验证支持的图片类型
-const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-// Vercel最大执行时间60秒，设置为55秒留出处理时间
-const PROCESS_TIMEOUT = 55000; 
-
 export default async function handler(req, res) {
+  console.log(`[INFO] 收到请求 ${req.method} ${req.url}`); 
+
+  // --- 1. 请求方法验证 ---
   if (req.method !== 'POST') {
-    console.error('[ERROR] 非法请求方法:', req.method);
-    return res.status(405).json({ error: '只支持POST请求' });
+    console.warn(`[WARN] 非法请求方法: ${req.method}`); 
+    // 设置响应头，明确告知允许的方法
+    res.setHeader('Allow', ['POST']);
+    // 返回 405 Method Not Allowed 状态码
+    return res.status(405).json({
+      success: false,
+      error: {
+        code: 'METHOD_NOT_ALLOWED',
+        message: '只支持POST请求',
+      },
+    });
   }
 
-  // 添加响应结束检查
-  let responseEnded = false;
-  req.on('close', () => {
-    if (!responseEnded) {
-      console.warn('[WARN] 客户端提前关闭了连接');
-      responseEnded = true;
-    }
-  });
+  // --- 2. API 密钥检查 ---
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error(`[ERROR] 服务器配置错误: GEMINI_API_KEY 未设置`); 
+    // 返回 500 Internal Server Error，因为这是服务器配置问题
+    return res.status(500).json({
+      success: false,
+      error: {
+        code: 'SERVER_CONFIG_ERROR',
+        message: '服务器内部配置错误 (API Key Missing)',
+      },
+    });
+  }
 
   try {
+    // --- 3. 请求体参数验证 ---
     const { imageData, mimeType } = req.body;
-    
-    // 增强参数验证
     if (!imageData || !mimeType) {
-      console.error('[ERROR] 缺少参数:', { imageData: !!imageData, mimeType: !!mimeType });
-      return res.status(400).json({ error: '缺少imageData或mimeType参数' });
-    }
-
-    // 添加输入验证增强
-    if (!VALID_MIME_TYPES.includes(mimeType)) {
-      return res.status(415).json({ 
-        error: `不支持的图片类型，仅支持: ${VALID_MIME_TYPES.join(', ')}`
+      const missingParams = [];
+      if (!imageData) missingParams.push('imageData');
+      if (!mimeType) missingParams.push('mimeType');
+      console.warn(`[WARN] 请求参数缺失: ${missingParams.join(', ')}`); // 移除了 reqId
+      // 返回 400 Bad Request 状态码，因为是客户端请求问题
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'MISSING_PARAMETERS',
+          message: `请求体缺少必需参数: ${missingParams.join(', ')}`,
+        },
       });
     }
 
-    if (imageData.length > 5 * 1024 * 1024) { // 5MB限制
-      return res.status(413).json({ error: '图片大小超过5MB限制' });
+    // 简单验证 mimeType 格式（可以根据需要添加更严格的图片类型检查）
+    if (!mimeType.startsWith('image/')) {
+        console.warn(`[WARN] 无效的 mimeType: ${mimeType}`); // 移除了 reqId
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: 'INVALID_MIME_TYPE',
+            message: `无效的 mimeType: ${mimeType}，应为 'image/...' 格式`,
+          },
+        });
     }
 
-    console.log('[LOG] 收到请求，图片类型:', mimeType);
+    console.log(`[INFO] 参数校验通过, 图片类型: ${mimeType}`); // 移除了 reqId
 
-    // 初始化模型
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // --- 4. 初始化 Google Generative AI 客户端 ---
+    const genAI = new GoogleGenerativeAI(apiKey);
     const modelConfig = {
-      model: "gemini-2.5-pro-exp-03-25",
+      // 建议使用 'gemini-pro-vision' 或最新的、稳定的 vision 模型
+      model: "gemini-pro-vision",
       generationConfig: {
-        temperature: 1,
+        temperature: 0.4, // OCR 任务较低温度可能更稳定
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
       },
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+      ],
     };
-    console.log('[LOG] 使用的模型配置:', JSON.stringify(modelConfig, null, 2)); 
+    console.log(`[INFO] 使用模型配置: ${JSON.stringify({...modelConfig, model: modelConfig.model}, null, 2)}`); // 移除了 reqId, 日志中不显示 API Key
     const model = genAI.getGenerativeModel(modelConfig);
+    console.log(`[INFO] Google AI 模型 (${modelConfig.model}) 初始化成功`); // 移除了 reqId
 
+    // --- 5. 准备图像数据 ---
     const imagePart = {
       inlineData: {
-        data: imageData,
+        data: imageData, // 确保 imageData 是 Base64 编码的字符串
         mimeType: mimeType
       },
     };
 
-    console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 31) + '...');
+    // 截断日志中的提示词，避免过长
+    const promptSnippet = ADVANCED_PROMPT.length > 100 ? ADVANCED_PROMPT.slice(0, 100) + '...' : ADVANCED_PROMPT;
+    console.log(`[INFO] 向 Gemini 发送提示词 (片段): ${promptSnippet}`); // 移除了 reqId
 
-    // 添加请求超时处理（针对Vercel的60秒限制）
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`处理超时（超过${PROCESS_TIMEOUT/1000}秒）`));
-      }, PROCESS_TIMEOUT);
-    });
+    // --- 6. 调用模型并进行流式处理 ---
+    console.log(`[INFO] 开始调用模型: ${modelConfig.model}`); // 移除了 reqId
+    const result = await model.generateContentStream([ADVANCED_PROMPT, imagePart]);
 
-    console.log('[LOG] 开始调用模型:', modelConfig.model);
-    
-    // 使用Promise.race实现超时控制
-    const result = await Promise.race([
-      model.generateContentStream([ADVANCED_PROMPT, imagePart]),
-      timeoutPromise
-    ]);
-
+    // --- 7. 设置 SSE 响应头 ---
     res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      'Connection': 'keep-alive',
+      'Content-Type': 'text/event-stream', // SSE 标准 MIME 类型
+      'Cache-Control': 'no-cache',        // 禁止缓存
+      'Connection': 'keep-alive',         // 保持连接
+      // 'X-Request-ID': reqId,           // 移除了 X-Request-ID 头
+      'Transfer-Encoding': 'chunked'      // 明确使用分块传输
     });
+    console.log(`[INFO] SSE 响应头已发送，开始流式传输数据`); // 移除了 reqId
 
+    // --- 8. 处理流式响应 ---
+    let fullResponseText = ""; // 用于记录完整的响应文本（调试用）
     for await (const chunk of result.stream) {
-      if (responseEnded) break; // 如果客户端已断开则停止处理
       const chunkText = chunk.text();
+      fullResponseText += chunkText; // 累加文本块
+      // 发送 SSE 数据：`data: json_string\n\n`
       res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
     }
 
-    responseEnded = true;
-    res.end();
-    console.log('[LOG] 请求处理完成');
+    // --- 9. 结束响应 ---
+    res.end(); // 必须调用 end() 来关闭 SSE 连接
+    // console.log(`[DEBUG] 完整响应文本:\n${fullResponseText}`); // 可以取消注释用于调试，移除了 reqId
+    console.log(`[INFO] 流式传输完成，请求处理成功`); // 移除了 reqId
 
   } catch (error) {
-    if (responseEnded) return; // 如果响应已结束则不再处理错误
-    
-    console.error('[ERROR] 处理失败:', error.message);
-    console.error(error.stack);
-    
-    let errorMessage = '处理图片时出错';
-    let statusCode = 500;
-    
-    if (error.message.includes('API_KEY')) {
-      errorMessage = '服务器配置错误（API密钥无效）';
-      statusCode = 503;
-    } else if (error.message.includes('image')) {
-      errorMessage = '图片格式不支持';
-      statusCode = 415;
-    } else if (error.message.includes('quota')) {
-      errorMessage = 'API配额已用完';
-      statusCode = 429;
-    } else if (error.message.includes('network')) {
-      errorMessage = '网络连接问题';
-      statusCode = 502;
-    } else if (error.message.includes('超时')) {
-      errorMessage = '处理时间过长，请尝试简化图片内容';
-      statusCode = 504;
+    // --- 10. 统一错误处理 ---
+    console.error(`[ERROR] 处理请求时发生错误:`, error.message); // 移除了 reqId
+    // 记录完整的错误堆栈信息
+    if (error.stack) {
+        console.error(`[ERROR] 错误堆栈: ${error.stack}`); // 移除了 reqId
+    } else {
+        console.error(`[ERROR] 错误详情:`, error); // 移除了 reqId
     }
 
-    if (!responseEnded) {
-      res.status(statusCode).json({ 
-        error: errorMessage,
-        details: process.env.NODE_ENV === 'development' ? {
-          message: error.message,
-          stack: error.stack
-        } : null
+    // 默认错误状态码和信息
+    let statusCode = 500;
+    let errorCode = 'INTERNAL_SERVER_ERROR';
+    let errorMessage = '处理图片时发生未知错误';
+
+    // 尝试根据错误信息判断错误类型
+    if (error.message) {
+        const lowerCaseError = error.message.toLowerCase();
+         if (lowerCaseError.includes('api key not valid') || lowerCaseError.includes('api_key')) {
+            statusCode = 500;
+            errorCode = 'INVALID_API_KEY';
+            errorMessage = '服务器配置错误 (API 密钥无效或过期)';
+        } else if (lowerCaseError.includes('invalid argument') || lowerCaseError.includes('image format is not supported') || lowerCaseError.includes('could not decode image')) {
+            statusCode = 400;
+            errorCode = 'INVALID_IMAGE_DATA';
+            errorMessage = '图片数据无效或格式不支持';
+        } else if (lowerCaseError.includes('quota exceeded') || lowerCaseError.includes('rate limit')) {
+            statusCode = 429;
+            errorCode = 'RATE_LIMIT_EXCEEDED';
+            errorMessage = '请求频率过高，请稍后再试';
+        } else if (lowerCaseError.includes('content filter') || lowerCaseError.includes('safety policy violation') || (error.response && error.response.promptFeedback?.blockReason)) {
+            statusCode = 400;
+            errorCode = 'CONTENT_BLOCKED';
+            errorMessage = '请求因内容安全策略被阻止';
+            // console.error(`[ERROR] 内容被阻止原因:`, error.response?.promptFeedback); // 移除了 reqId
+        } else if (lowerCaseError.includes('network error') || lowerCaseError.includes('fetch failed') || lowerCaseError.includes('timeout')) {
+            statusCode = 503;
+            errorCode = 'SERVICE_UNAVAILABLE';
+            errorMessage = '无法连接到 AI 服务，请稍后重试';
+        }
+    }
+
+    // 检查响应头是否已经发送
+    if (res.headersSent) {
+      console.error(`[ERROR] 错误发生在流式传输期间，无法发送 JSON 错误响应。连接将中断。`); // 移除了 reqId
+      res.end();
+    } else {
+      console.log(`[INFO] 发送错误响应: Status=${statusCode}, Code=${errorCode}, Message=${errorMessage}`); // 移除了 reqId
+      res.status(statusCode).json({
+        success: false,
+        error: {
+          code: errorCode,
+          message: errorMessage,
+          details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        },
       });
-      responseEnded = true;
     }
   }
 }
