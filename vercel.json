@@ -1,7 +1,7 @@
 {
   "headers": [
     {
-      "source": "/api/(.*)",  // 确保匹配API路径
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
