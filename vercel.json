@@ -1,14 +1,11 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "build",
-  "framework": "create-react-app",
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/(.*)",  // 确保匹配API路径
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "no-store, max-age=0"
+          "value": "no-store, no-cache, must-revalidate"
         },
         {
           "key": "CDN-Cache-Control",
