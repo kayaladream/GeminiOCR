@@ -1,0 +1,980 @@
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes backgroundShift {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes smoothReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+    background-position: 0% 50%;
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  85% {
+    background-position: 100% 50%;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  95% {
+    color: rgba(29, 29, 31, 0);
+    -webkit-text-fill-color: rgba(29, 29, 31, 0);
+    background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+  100% {
+    opacity: 1;
+    color: #1d1d1f;
+    -webkit-text-fill-color: #1d1d1f;
+    background: none;
+  }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+body {
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(0, 113, 227, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 100% 0%, rgba(98, 0, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(255, 44, 171, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(0, 113, 227, 0.05) 0%, transparent 50%);
+  z-index: -1;
+  animation: backgroundShift 15s ease-in-out infinite alternate;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  position: relative;
+  z-index: 1;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0rem;
+  position: relative;
+}
+
+header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #0071e3, #6200ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.5px;
+}
+
+header p {
+  font-size: 0.8rem;
+  color: #86868b;
+  font-weight: 400;
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.upload-container {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.upload-button {
+  background: linear-gradient(135deg, #0071e3, #6200ff);
+  color: white;
+  padding: 1rem 2.5rem;
+  border-radius: 99px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 5px 15px rgba(0, 113, 227, 0.2);
+  border: none;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+}
+
+.upload-button::after {
+  display: none;
+}
+
+.upload-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 113, 227, 0.3);
+}
+
+.image-preview {
+  position: relative;
+  aspect-ratio: 4/3;
+  margin-top: 1rem;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  background: #f0f0f0;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #fafafa;
+  border-radius: 12px;
+  z-index: 1;
+  display: block;
+}
+
+.image-preview.load-error::before {
+  content: '图片加载失败';
+  color: #dc3545;
+  font-weight: 500;
+  z-index: 0;
+}
+
+.image-preview:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.image-preview.loading .loading-overlay {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 113, 227, 0.08),
+    rgba(98, 0, 255, 0.08),
+    rgba(255, 44, 171, 0.08),
+    rgba(0, 113, 227, 0.08)
+  );
+  background-size: 300% 100%;
+  animation: gradientMove 3s linear infinite;
+  border-radius: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0071e3;
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.result-container {
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 113, 227, 0.1);
+  transition: none;
+  overflow-y: auto;
+  max-height: 100%;
+  height: auto;
+  scroll-behavior: smooth;
+}
+
+.result-container:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08);
+}
+
+.loading.result-loading {
+  color: #0071e3;
+  font-weight: 500;
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.result-text {
+  line-height: 1.6;
+  color: #1d1d1f;
+  width: 100%;
+  padding: 0 0 1rem 0;
+  transition: none;
+}
+
+.result-text .result-header {
+  min-height: 38px;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 113, 227, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.result-text table,
+.result-text ul,
+.result-text ol {
+  width: 100%;
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
+  margin: 1rem 0;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-delay: 0.3s;
+}
+
+.result-text table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.result-text th,
+.result-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px 16px;
+  text-align: left;
+  color: #1d1d1f;
+  -webkit-text-fill-color: #1d1d1f;
+  word-wrap: break-word;
+  vertical-align: top;
+  opacity: 0;
+  animation: smoothReveal 1s ease-out forwards;
+  animation-delay: calc(var(--index) * 50ms);
+}
+
+.result-text p {
+  margin: 1rem 0;
+  line-height: 1.8;
+}
+
+.gradient-text {
+  color: #1d1d1f;
+  position: relative;
+  min-height: 50px;
+  font-size: 1.1rem;
+  font-family: "微软雅黑", serif;
+}
+
+.gradient-text > div {
+  line-height: 1.6;
+}
+
+.gradient-text p,
+.gradient-text li,
+.gradient-text td,
+.gradient-text th {
+  opacity: 0;
+  animation: smoothReveal 1s ease-out forwards;
+  animation-delay: calc(var(--index) * 50ms);
+  background: linear-gradient(90deg, #0071e3, #6200ff, #ff2cab);
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.8;
+  margin: 0.8rem 0;
+}
+
+.gradient-text table,
+.gradient-text ul,
+.gradient-text ol {
+  margin: 1rem 0;
+}
+
+.gradient-text table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.gradient-text th,
+.gradient-text td {
+  border: 1px solid #e0e0e0;
+  padding: 12px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.result-text tr:hover td {
+  background: rgba(0, 113, 227, 0.02);
+}
+
+.result-text table .gradient-text {
+  display: block;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 113, 227, 0.08),
+    rgba(98, 0, 255, 0.08),
+    rgba(255, 44, 171, 0.08),
+    rgba(0, 113, 227, 0.08)
+  );
+  background-size: 300% 100%;
+  animation: gradientMove 3s linear infinite;
+  border-radius: 12px;
+  z-index: 2;
+  color: #0071e3;
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.upload-zone {
+  position: relative;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-zone.dragging {
+  border-color: #4CAF50;
+  background: rgba(76, 175, 80, 0.05);
+  transform: scale(1.02);
+  box-shadow: 0 0 20px rgba(76, 175, 80, 0.2);
+}
+
+.upload-zone.dragging .upload-container,
+.upload-zone.dragging .upload-hint {
+  opacity: 0.5;
+}
+
+.upload-zone.dragging::after {
+  content: '拖拽到此处上传图片';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2em;
+  color: #4CAF50;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+  pointer-events: none;
+}
+
+.dragging-overlay-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2em;
+  color: #4CAF50;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 10px 20px;
+  border-radius: 4px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.upload-container {
+  transition: all 0.3s ease;
+}
+
+.upload-hint {
+  margin-top: 1rem;
+  color: #86868b;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  user-select: none;
+  text-align: center;
+  width: 100%;
+}
+
+.drag-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(76, 175, 80, 0.1);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.drag-overlay.active {
+  display: block;
+}
+
+.drag-overlay::after {
+  content: '将图片拖到下方框内';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5em;
+  color: #4CAF50;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 15px 30px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+main {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+main.has-content {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 2.5rem;
+}
+
+.upload-section {
+  width: 100%;
+  max-width: 600px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.upload-section.with-image {
+  width: 40%;
+  max-width: 450px;
+}
+
+.result-section {
+  flex: 1;
+  min-width: 0;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-delay: 0.2s;
+  max-height: calc(100vh - 120px);
+  position: sticky;
+  top: 2rem;
+  align-self: stretch;
+}
+
+.result-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.upload-section.with-image .upload-zone {
+  padding: 3rem;
+  margin-bottom: 1.5rem;
+  min-height: auto;
+}
+
+@media (max-width: 992px) {
+  main.has-content {
+    flex-direction: column;
+    align-items: center;
+  }
+  .upload-section.with-image {
+    width: 100%;
+    max-width: 600px;
+  }
+  .result-section {
+    max-height: 60vh;
+    position: relative;
+    top: 0;
+    width: 100%;
+    max-width: 600px;
+    margin-top: 2rem;
+  }
+}
+
+.result-container::-webkit-scrollbar {
+  width: 8px;
+}
+.result-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+.result-container::-webkit-scrollbar-thumb {
+  background: #0071e3;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+.result-container::-webkit-scrollbar-thumb:hover {
+  background: #005bb5;
+}
+
+.url-button {
+  background: transparent;
+  color: #0071e3;
+  padding: 1rem 2rem;
+  border-radius: 99px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  border: 2px solid #0071e3;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+.url-button:hover {
+  background: rgba(0, 113, 227, 0.1);
+  transform: translateY(-2px);
+}
+
+.url-form {
+  width: 100%;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.url-input {
+  flex: 1;
+  padding: 0.8rem 1rem;
+  border: 2px solid rgba(0, 113, 227, 0.2);
+  border-radius: 12px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.9);
+  min-width: 0;
+}
+.url-input:focus {
+  outline: none;
+  border-color: #0071e3;
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+}
+
+.url-submit {
+  padding: 0.8rem 1.5rem;
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+.url-submit:hover {
+  background: #005bb5;
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 2rem 1rem;
+  }
+  header h1 { font-size: 1.5rem; }
+  header p { font-size: 0.75rem; }
+  .upload-button, .url-button {
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+  }
+  .url-submit {
+    padding: 0.8rem 1rem;
+  }
+}
+
+.images-preview {
+  width: 100%;
+}
+
+.image-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.nav-button {
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+.nav-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.nav-button:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 113, 227, 0.3);
+}
+
+.image-counter {
+  font-size: 0.9rem;
+  color: #86868b;
+  min-width: 60px;
+  text-align: center;
+}
+
+.modal-overlay {
+  /* 保持原样 */
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  animation: fadeIn 0.3s ease-out;
+  /* 关键：保持 pointer-events: none 以允许底层交互且点击遮罩无效 */
+  pointer-events: none;
+}
+
+.modal-content {
+  /* 保持大部分原样 */
+  /* position: relative; /* 如果原来没有，需要添加 */
+  position: relative; /* 确保为关闭按钮提供定位上下文 */
+  max-width: 90vw;
+  max-height: 90vh;
+  background: transparent;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: scaleIn 0.3s ease-out;
+  cursor: grab;
+  /* 关键：允许内容溢出，以便按钮能在视觉上跑到外面 */
+  overflow: visible;
+  /* 关键：让 modal-content 自身可以响应鼠标事件（拖动等），并允许子元素响应 */
+  pointer-events: auto;
+}
+.modal-content img {
+  /* 保持原样 */
+  display: block;
+  max-width: 100%;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 修改：关闭按钮样式 */
+.modal-close {
+  position: absolute;
+  /* 定位基准点在 modal-content 的右上角内部 */
+  top: 0;  /* 距离 modal-content 顶部 0px */
+  right: 0; /* 距离 modal-content 右侧 0px */
+  /* 使用 transform 将按钮视觉上移出边界 */
+  /* translate(50%, -50%) 将按钮中心点放在右上角顶点，一半在外 */
+  transform: translate(50%, -50%);
+  /* 你可以调整百分比来控制按钮移出多少，例如 translate(70%, -70%) 让更多部分在外面 */
+
+  /* 保持或微调原来的尺寸和视觉样式 */
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: rgba(60, 60, 60, 0.7); /* 使用稍暗的背景色，在透明背景上更清晰 */
+  border: 1px solid rgba(255, 255, 255, 0.5); /* 可选：加个白色半透明边框 */
+  font-size: 24px;
+  color: white; /* 白色叉号 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* 调整阴影 */
+  transition: all 0.2s ease; /* 调整过渡效果 */
+  z-index: 10; /* 确保在图片之上 (相对于 modal-content) */
+  /* 关键：确保按钮本身可以响应点击事件 */
+  pointer-events: auto;
+}
+.modal-close:hover {
+  /* 保持或微调 hover 效果 */
+  background: rgba(30, 30, 30, 0.9);
+  /* 应用相同的 translate 保持位置，只改变 scale */
+  transform: translate(50%, -50%) scale(1.1);
+  color: #fff;
+}
+
+.image-preview img[src] {
+  cursor: zoom-in;
+}
+
+.katex {
+  color: #1d1d1f !important;
+  pointer-events: none;
+}
+
+.latex-inline {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 0.2em;
+  opacity: 0;
+  animation: smoothReveal 1s ease-out forwards;
+  animation-delay: calc(var(--index) * 50ms);
+}
+.latex-block {
+  margin: 1em 0;
+  overflow-x: auto;
+  max-width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0.5em 0;
+  opacity: 0;
+  animation: smoothReveal 1s ease-out forwards;
+  animation-delay: calc(var(--index) * 50ms);
+}
+.latex-block .katex-display {
+  margin: 0;
+}
+.katex {
+  font-size: 1.1em;
+  line-height: 1.2;
+  text-rendering: optimizeLegibility;
+  animation: none !important;
+}
+.katex-display > .katex {
+  display: inline-block !important;
+  text-align: center;
+}
+.katex-html {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+@media (max-width: 768px) {
+  .katex { font-size: 1em; }
+  .latex-block { max-width: 100%; overflow-x: auto; }
+}
+
+.copy-button {
+  background: #0071e3;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.copy-button:hover {
+  background: #005bb5;
+  transform: translateY(-1px);
+}
+.copy-button.copied {
+  background: #34c759;
+}
+
+.github-link {
+  position: fixed;
+  top: 0.5rem; right: 0.5rem;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+}
+.github-link:hover { transform: scale(1.1); }
+.github-link svg {
+  fill: #1d1d1f;
+  opacity: 0.8;
+  transition: all 0.3s ease;
+  width: 32px; height: 32px;
+}
+.github-link:hover svg { fill: #0071e3; opacity: 1; }
+
+@media (max-width: 768px) {
+  .github-link { top: 0.5rem; right: 0.5rem; }
+  .github-link svg { width: 28px; height: 28px; }
+}
+
+.edit-button, .save-button, .cancel-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+.edit-button:hover, .save-button:hover, .cancel-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+.edit-button { background: #ffc107; color: black; }
+.save-button { background: #28a745; color: white; }
+.cancel-button { background: #dc3545; color: white; }
+.editing-area .result-header div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.editing-area .gradient-text p,
+.editing-area .gradient-text li,
+.editing-area .gradient-text td,
+.editing-area .gradient-text th {
+  animation: none !important;
+  opacity: 1 !important;
+  background: none !important;
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}
+
+.edit-content-editable {
+  width: 100%;
+  min-height: 400px;
+  max-height: calc(80vh - 150px);
+  overflow-y: auto;
+  font-family: "微软雅黑", serif;
+  line-height: 1.6;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  padding: 15px;
+  box-sizing: border-box;
+  margin-top: 1rem;
+  background-color: #f8f9fa;
+  color: #212529;
+  cursor: text;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.edit-content-editable:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+.edit-content-editable strong {
+  font-weight: bold;
+}
+.edit-content-editable em {
+  font-style: italic;
+}
+.edit-content-editable p {
+  margin: 0 0 1em 0;
+}
+.edit-content-editable ul,
+.edit-content-editable ol {
+  padding-left: 2em;
+  margin: 0 0 1em 0;
+}
+.edit-content-editable li {
+  margin-bottom: 0.2em;
+}
+.edit-content-editable code {
+  background-color: rgba(27, 31, 35, 0.05);
+  padding: .2em .4em;
+  margin: 0;
+  font-size: 85%;
+  border-radius: 3px;
+}
+.edit-content-editable pre {
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background-color: #f6f8fa;
+  border-radius: 3px;
+  margin: 0 0 1em 0;
+}
+.edit-content-editable pre code {
+  padding: 0;
+  margin: 0;
+  font-size: 100%;
+  background-color: transparent;
+  border-radius: 0;
+}
+.edit-content-editable blockquote {
+  padding: 0 1em;
+  color: #6a737d;
+  border-left: 0.25em solid #dfe2e5;
+  margin: 0 0 1em 0;
+}
+.edit-content-editable table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  width: auto;
+  border-spacing: 0;
+}
+.edit-content-editable th,
+.edit-content-editable td {
+  border: 1px solid #dfe2e5;
+  padding: 6px 13px;
+}
+.edit-content-editable .katex {
+  color: inherit !important;
+  pointer-events: auto;
+}
+
+.result-placeholder {
+  text-align: center;
+  color: #86868b;
+  padding: 2rem;
+  font-style: italic;
+}
