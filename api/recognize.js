@@ -108,7 +108,7 @@ export default async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(apiKey);
     const modelConfig = {
       // 建议使用 'gemini-pro-vision' 或最新的、稳定的 vision 模型
-      model: "gemini-pro-vision",
+      model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
         temperature: 0.4, // OCR 任务较低温度可能更稳定
         topP: 0.95,
