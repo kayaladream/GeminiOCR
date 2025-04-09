@@ -499,8 +499,8 @@ main.has-content {
 }
 
 .upload-section.with-image {
-  width: 40%;
-  max-width: 450px;
+  width: 50%;  /* 左侧区域占父容器宽度的 50% */
+  max-width: 600px;
 }
 
 .result-section {
