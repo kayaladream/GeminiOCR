@@ -509,7 +509,7 @@ main.has-content {
   opacity: 0;
   animation: fadeIn 0.5s ease-out forwards;
   animation-delay: 0.2s;
-  max-height: calc(80vh-80px);
+  max-height: calc(80vh-75px);
   position: sticky;
   top: 2rem;
   align-self: stretch;
