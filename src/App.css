@@ -892,7 +892,7 @@ main.has-content {
   min-height: 400px;
   max-height: calc(80vh - 150px);
   overflow-y: auto;
-  font-size: 1.15rem;
+  font-size: 1.13rem;
   font-family: "微软雅黑", serif;
   line-height: 1.6;
   border: 1px solid #ced4da;
