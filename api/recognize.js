@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     // 初始化模型（模型信息日志）
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const modelConfig = {
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
         temperature: 1,
         topP: 0.95,
