@@ -84,33 +84,34 @@ body::before {
   animation: backgroundShift 15s ease-in-out infinite alternate;
 }
 
-/* --- 修改点 1: 使 .app 成为全屏 flex 容器 --- */
+/* --- 修改点 1: .app 负责水平居中其子元素 (header, main) --- */
 .app {
   max-width: 1300px;
   margin: 0 auto;
-  padding: 3rem 2rem; /* 保留你的内边距 */
+  padding: 3rem 2rem; /* 保留内边距 */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   position: relative;
   z-index: 1;
-  /* --- 新增/修改 --- */
-  display: flex; /* 将 .app 设为 flex 容器 */
-  flex-direction: column; /* 其子元素 (header, main) 垂直排列 */
-  min-height: 100vh; /* 确保 .app 容器至少有视口那么高 */
-  box-sizing: border-box; /* 让 padding 和 border 计算在 min-height 内 */
+  /* --- 保持 flex 布局 --- */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  box-sizing: border-box;
+  /* --- 新增/修改: 水平居中 header 和 main --- */
+  align-items: center;
+  /* 移除 justify-content: center; 让内容自然从顶部开始 */
 }
 /* --- 修改点 1 结束 --- */
 
-/* --- 修改点 2: 调整 header 宽度以便居中 --- */
+/* header 样式保持不变，其内部文本由 text-align: center 居中 */
 header {
-  text-align: center; /* 保持内部文本居中 */
-  margin-bottom: 1rem; /* 保留你的间距 */
+  text-align: center;
+  margin-bottom: 1rem; /* 保持与下方元素的间距 */
   padding: 0rem;
   position: relative;
-  /* --- 新增/修改 --- */
-  width: 100%; /* 让 header 占据可用宽度 */
-  max-width: 600px; /* 设置最大宽度，align-items 会将其水平居中 */
+  width: 100%; /* 宽度由 align-items 控制 */
+  max-width: 600px; /* 限制最大宽度 */
 }
-/* --- 修改点 2 结束 --- */
 
 header h1 {
   font-size: 1.8rem;
@@ -127,8 +128,8 @@ header p {
   font-size: 0.8rem;
   color: #86868b;
   font-weight: 400;
-  max-width: 600px; /* 已有限制 */
-  margin: 0 auto; /* 水平居中段落内容 */
+  max-width: 600px;
+  margin: 0 auto;
   line-height: 1.5;
 }
 
@@ -234,7 +235,7 @@ header p {
   padding: 2rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 113, 227, 0.1);
-  transition: none; /* 保持不变 */
+  transition: none;
   overflow-y: auto;
   max-height: 100%;
   height: auto;
@@ -258,7 +259,7 @@ header p {
   color: #1d1d1f;
   width: 100%;
   padding: 0 0 1rem 0;
-  transition: none; /* 保持不变 */
+  transition: none;
 }
 
 .result-text .result-header {
@@ -492,54 +493,54 @@ header p {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* --- 修改点 3: 调整 main 布局方式 --- */
+/* main 元素的基本样式，由 .app 控制其水平居中 */
 main {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex; /* 使 main 成为 flex 容器 */
-  flex-direction: column; /* 其子元素默认垂直排列 */
-  align-items: center; /* 子元素在交叉轴（水平）居中 */
-  width: 100%; /* 让 main 占据 .app 的全部宽度 */
+  display: flex;
+  flex-direction: column; /* 内部元素默认垂直排列 */
+  align-items: center; /* 内部元素（初始是upload-section）水平居中 */
+  width: 100%; /* 占据 .app 内的可用宽度 */
+  /* max-width: 1300px; /* 可以考虑限制 main 的最大宽度，但通常由 .app 控制 */
 }
-/* --- 修改点 3 结束 --- */
 
-
-/* --- 修改点 4: 新增! 针对初始状态 (main 没有 .has-content 类) 的样式 --- */
+/* --- 修改点 2: 初始状态下 main 不再强制增长或居中其内容 --- */
+/* 这样它会紧跟在 header 下方 */
 main:not(.has-content) {
-  flex-grow: 1; /* 关键: 让 main 在垂直方向上伸展，填充 .app 容器内的剩余可用空间 */
-  justify-content: center; /* 关键: 将 main 内部的直接子元素 (header 和 upload-section) 在主轴（垂直）上居中 */
+  /* 移除 flex-grow: 1; */
+  /* 移除 justify-content: center; */
+  /* 保留 flex 布局和 align-items 以便居中 upload-section */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
-/* --- 修改点 4 结束 --- */
+/* --- 修改点 2 结束 --- */
 
 
-/* --- 这个规则控制有内容时的布局，保持不变 --- */
+/* 有内容时的布局，保持不变 */
 main.has-content {
-  flex-direction: row; /* 有内容时恢复为行布局 */
-  align-items: flex-start; /* 有内容时顶部对齐 */
+  flex-direction: row; /* 恢复为行布局 */
+  align-items: flex-start; /* 顶部对齐 */
   gap: 2.5rem;
-  /* justify-content: normal; /* 恢复默认的主轴对齐 */
-  /* flex-grow: 0; /* 恢复默认的伸缩 */
+  /* flex-grow: 1; /* 如果需要 main 在有内容时填满剩余垂直空间，可以取消注释 */
+  /* justify-content: flex-start; /* 如果需要内容从左侧开始，可以取消注释 */
 }
-/* --- 结束 --- */
 
 
-/* --- 修改点 5: 调整 upload-section 初始宽度以便居中 --- */
+/* 上传区域样式，由 main 控制其水平居中 */
 .upload-section {
-  /* --- 新增/修改 --- */
-  width: 100%; /* 初始状态占据宽度 */
-  max-width: 600px; /* 初始状态最大宽度，以便 align-items: center 生效 */
-  /* --- 保留 --- */
+  width: 100%;
+  max-width: 600px; /* 限制最大宽度 */
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0; /* 保持不变 */
+  flex-shrink: 0;
 }
-/* --- 修改点 5 结束 --- */
 
 
-/* --- 这个规则控制有内容时的 upload-section 样式，保持不变 --- */
+/* 有图片时 upload-section 的样式，保持不变 */
 .upload-section.with-image {
-  width: 50%;  /* 左侧区域占父容器宽度的 50% */
-  max-width: 600px; /* 保持最大宽度限制 */
+  width: 50%;
+  max-width: 600px;
 }
-/* --- 结束 --- */
 
 
 .result-section {
@@ -548,7 +549,7 @@ main.has-content {
   opacity: 0;
   animation: fadeIn 0.5s ease-out forwards;
   animation-delay: 0.2s;
-  max-height: calc(80vh - 90px); /* 保持不变 */
+  max-height: calc(80vh - 90px);
   position: sticky;
   top: 2rem;
   align-self: stretch;
@@ -560,7 +561,6 @@ main.has-content {
   flex-direction: column;
 }
 
-/* --- 这个规则控制有内容时的 upload-zone 样式，保持不变 --- */
 .upload-section.with-image .upload-zone {
   padding: 3rem;
   margin-bottom: 1.5rem;
@@ -569,29 +569,25 @@ main.has-content {
   display: flex;
   min-height: auto;
 }
-/* --- 结束 --- */
 
 
 @media (max-width: 992px) {
   main.has-content {
-    flex-direction: column; /* 在小屏幕上，有内容时也变为垂直排列 */
-    align-items: center; /* 保持水平居中 */
+    flex-direction: column;
+    align-items: center;
   }
   .upload-section.with-image {
-    width: 100%; /* 小屏幕上，有内容时占满宽度 */
+    width: 100%;
     max-width: 600px;
   }
   .result-section {
-    max-height: 60vh; /* 调整小屏幕结果区高度 */
-    position: relative; /* 取消粘性定位 */
+    max-height: 60vh;
+    position: relative;
     top: 0;
     width: 100%;
     max-width: 600px;
     margin-top: 2rem;
   }
-  /* --- 新增: 确保小屏幕初始状态下也居中 --- */
-  /* (由于 main:not(.has-content) 已处理，通常无需额外操作) */
-  /* .app { padding: 2rem 1rem; } /* 你原来的响应式 padding */
 }
 
 .result-container::-webkit-scrollbar {
@@ -668,9 +664,8 @@ main.has-content {
 }
 
 @media (max-width: 768px) {
-  /* --- 合并你的响应式调整 --- */
   .app {
-    padding: 2rem 1rem; /* 应用你的小屏幕 padding */
+    padding: 2rem 1rem; /* 应用小屏幕 padding */
   }
   header h1 { font-size: 1.5rem; }
   header p { font-size: 0.75rem; }
@@ -681,10 +676,8 @@ main.has-content {
   .url-submit {
     padding: 0.8rem 1rem;
   }
-  /* --- Katex 响应式调整，保持不变 --- */
   .katex { font-size: 1em; }
   .latex-block { max-width: 100%; overflow-x: auto; }
-  /* --- GitHub 链接响应式调整，保持不变 --- */
    .github-link { top: 0.5rem; right: 0.5rem; }
    .github-link svg { width: 28px; height: 28px; }
 }
@@ -742,11 +735,11 @@ main.has-content {
   justify-content: center;
   z-index: 999;
   animation: fadeIn 0.3s ease-out;
-  pointer-events: none; /* 保持不变 */
+  pointer-events: none;
 }
 
 .modal-content {
-  position: relative; /* 保持不变 */
+  position: relative;
   max-width: 90vw;
   max-height: 90vh;
   background: transparent;
@@ -754,8 +747,8 @@ main.has-content {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: scaleIn 0.3s ease-out;
   cursor: grab;
-  overflow: visible; /* 保持不变 */
-  pointer-events: auto; /* 保持不变 */
+  overflow: visible;
+  pointer-events: auto;
 }
 .modal-content img {
   display: block;
@@ -773,7 +766,7 @@ main.has-content {
   position: absolute;
   top: 0;
   right: 0;
-  transform: translate(50%, -50%); /* 保持不变 */
+  transform: translate(50%, -50%);
   width: 40px; height: 40px;
   border-radius: 50%;
   background: rgba(60, 60, 60, 0.7);
@@ -787,11 +780,11 @@ main.has-content {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   transition: all 0.2s ease;
   z-index: 10;
-  pointer-events: auto; /* 保持不变 */
+  pointer-events: auto;
 }
 .modal-close:hover {
   background: rgba(30, 30, 30, 0.9);
-  transform: translate(50%, -50%) scale(1.1); /* 保持不变 */
+  transform: translate(50%, -50%) scale(1.1);
   color: #fff;
 }
 
@@ -842,8 +835,6 @@ main.has-content {
   overflow-y: hidden;
 }
 
-/* 移除了之前的 @media (max-width: 768px) for katex，合并到上面的 768px 媒体查询中 */
-
 .copy-button {
   background: #0071e3;
   color: white;
@@ -880,8 +871,6 @@ main.has-content {
   width: 32px; height: 32px;
 }
 .github-link:hover svg { fill: #0071e3; opacity: 1; }
-
-/* 移除了之前的 @media (max-width: 768px) for github-link，合并到上面的 768px 媒体查询中 */
 
 
 .edit-button, .save-button, .cancel-button {
