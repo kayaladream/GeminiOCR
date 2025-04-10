@@ -751,7 +751,6 @@ function App() {
   return (
     <div className="app">
        <header>
-       <header className={images.length > 0 ? "with-content" : "initial-page"}>
          {/* GitHub 链接 (保持不变) */}
         <a
           href="https://github.com/kayaladream/GeminiOCR"
