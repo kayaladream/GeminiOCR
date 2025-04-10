@@ -1,5 +1,3 @@
-/* --- START OF FILE App.css --- */
-
 @keyframes gradientMove {
   0% {
     background-position: 0% 50%;
@@ -84,33 +82,25 @@ body::before {
   animation: backgroundShift 15s ease-in-out infinite alternate;
 }
 
-/* --- 修改点 1: .app 负责水平居中其子元素 (header, main) --- */
 .app {
   max-width: 1300px;
   margin: 0 auto;
-  padding: 3rem 2rem; /* 保留内边距 */
+  padding: 3rem 2rem;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   position: relative;
   z-index: 1;
-  /* --- 保持 flex 布局 --- */
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  box-sizing: border-box;
-  /* --- 新增/修改: 水平居中 header 和 main --- */
-  align-items: center;
-  /* 移除 justify-content: center; 让内容自然从顶部开始 */
 }
-/* --- 修改点 1 结束 --- */
 
-/* header 样式保持不变，其内部文本由 text-align: center 居中 */
 header {
   text-align: center;
-  margin-bottom: 1rem; /* 保持与下方元素的间距 */
+  margin-bottom: 1rem;
   padding: 0rem;
   position: relative;
-  width: 100%; /* 宽度由 align-items 控制 */
-  max-width: 600px; /* 限制最大宽度 */
+  display: flex; /* 新增 */
+  flex-direction: column; /* 新增 */
+  justify-content: center; /* 新增 */
+  align-items: center; /* 新增 */
+  min-height: 100vh; /* 新增 - 使 header 占据整个视口高度 */
 }
 
 header h1 {
@@ -405,6 +395,7 @@ header p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-top: 2rem; /* 新增 - 增加与标题的间距 */
 }
 
 .upload-zone.dragging {
@@ -493,55 +484,33 @@ header p {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-/* main 元素的基本样式，由 .app 控制其水平居中 */
 main {
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
-  flex-direction: column; /* 内部元素默认垂直排列 */
-  align-items: center; /* 内部元素（初始是upload-section）水平居中 */
-  width: 100%; /* 占据 .app 内的可用宽度 */
-  /* max-width: 1300px; /* 可以考虑限制 main 的最大宽度，但通常由 .app 控制 */
-}
-
-/* --- 修改点 2: 初始状态下 main 不再强制增长或居中其内容 --- */
-/* 这样它会紧跟在 header 下方 */
-main:not(.has-content) {
-  /* 移除 flex-grow: 1; */
-  /* 移除 justify-content: center; */
-  /* 保留 flex 布局和 align-items 以便居中 upload-section */
-  display: flex;
   flex-direction: column;
   align-items: center;
-  width: 100%;
+  justify-content: center; /* 新增 */
+  min-height: calc(100vh - 200px); /* 新增 - 根据实际情况调整 */
 }
-/* --- 修改点 2 结束 --- */
 
-
-/* 有内容时的布局，保持不变 */
 main.has-content {
-  flex-direction: row; /* 恢复为行布局 */
-  align-items: flex-start; /* 顶部对齐 */
+  flex-direction: row;
+  align-items: flex-start;
   gap: 2.5rem;
-  /* flex-grow: 1; /* 如果需要 main 在有内容时填满剩余垂直空间，可以取消注释 */
-  /* justify-content: flex-start; /* 如果需要内容从左侧开始，可以取消注释 */
 }
 
-
-/* 上传区域样式，由 main 控制其水平居中 */
 .upload-section {
   width: 100%;
-  max-width: 600px; /* 限制最大宽度 */
+  max-width: 600px;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
+  margin: -3rem auto 0; /* 新增 - 负 margin 抵消 header 的 padding */
 }
 
-
-/* 有图片时 upload-section 的样式，保持不变 */
 .upload-section.with-image {
-  width: 50%;
+  width: 50%;  /* 左侧区域占父容器宽度的 50% */
   max-width: 600px;
 }
-
 
 .result-section {
   flex: 1;
@@ -549,7 +518,7 @@ main.has-content {
   opacity: 0;
   animation: fadeIn 0.5s ease-out forwards;
   animation-delay: 0.2s;
-  max-height: calc(80vh - 90px);
+  max-height: calc(80vh-90px);
   position: sticky;
   top: 2rem;
   align-self: stretch;
@@ -564,12 +533,11 @@ main.has-content {
 .upload-section.with-image .upload-zone {
   padding: 3rem;
   margin-bottom: 1.5rem;
-  min-height: 100px;
-  border-radius: 15px;
-  display: flex;
+  min-height: 100px;  /* 设置最小高度 */
+  border-radius: 15px; /* 设置圆角 */
+  display: flex; /* 保持 flex 布局让内部元素居中等 */
   min-height: auto;
 }
-
 
 @media (max-width: 992px) {
   main.has-content {
@@ -665,7 +633,7 @@ main.has-content {
 
 @media (max-width: 768px) {
   .app {
-    padding: 2rem 1rem; /* 应用小屏幕 padding */
+    padding: 2rem 1rem;
   }
   header h1 { font-size: 1.5rem; }
   header p { font-size: 0.75rem; }
@@ -676,10 +644,6 @@ main.has-content {
   .url-submit {
     padding: 0.8rem 1rem;
   }
-  .katex { font-size: 1em; }
-  .latex-block { max-width: 100%; overflow-x: auto; }
-   .github-link { top: 0.5rem; right: 0.5rem; }
-   .github-link svg { width: 28px; height: 28px; }
 }
 
 .images-preview {
@@ -727,6 +691,7 @@ main.has-content {
 }
 
 .modal-overlay {
+  /* 保持原样 */
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: transparent;
@@ -735,11 +700,14 @@ main.has-content {
   justify-content: center;
   z-index: 999;
   animation: fadeIn 0.3s ease-out;
+  /* 关键：保持 pointer-events: none 以允许底层交互且点击遮罩无效 */
   pointer-events: none;
 }
 
 .modal-content {
-  position: relative;
+  /* 保持大部分原样 */
+  /* position: relative; /* 如果原来没有，需要添加 */
+  position: relative; /* 确保为关闭按钮提供定位上下文 */
   max-width: 90vw;
   max-height: 90vh;
   background: transparent;
@@ -747,10 +715,13 @@ main.has-content {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: scaleIn 0.3s ease-out;
   cursor: grab;
+  /* 关键：允许内容溢出，以便按钮能在视觉上跑到外面 */
   overflow: visible;
+  /* 关键：让 modal-content 自身可以响应鼠标事件（拖动等），并允许子元素响应 */
   pointer-events: auto;
 }
 .modal-content img {
+  /* 保持原样 */
   display: block;
   max-width: 100%;
   max-height: 90vh;
@@ -762,28 +733,38 @@ main.has-content {
   -webkit-user-drag: none;
 }
 
+/* 修改：关闭按钮样式 */
 .modal-close {
   position: absolute;
-  top: 0;
-  right: 0;
+  /* 定位基准点在 modal-content 的右上角内部 */
+  top: 0;  /* 距离 modal-content 顶部 0px */
+  right: 0; /* 距离 modal-content 右侧 0px */
+  /* 使用 transform 将按钮视觉上移出边界 */
+  /* translate(50%, -50%) 将按钮中心点放在右上角顶点，一半在外 */
   transform: translate(50%, -50%);
+  /* 你可以调整百分比来控制按钮移出多少，例如 translate(70%, -70%) 让更多部分在外面 */
+
+  /* 保持或微调原来的尺寸和视觉样式 */
   width: 40px; height: 40px;
   border-radius: 50%;
-  background: rgba(60, 60, 60, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(60, 60, 60, 0.7); /* 使用稍暗的背景色，在透明背景上更清晰 */
+  border: 1px solid rgba(255, 255, 255, 0.5); /* 可选：加个白色半透明边框 */
   font-size: 24px;
-  color: white;
+  color: white; /* 白色叉号 */
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  transition: all 0.2s ease;
-  z-index: 10;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* 调整阴影 */
+  transition: all 0.2s ease; /* 调整过渡效果 */
+  z-index: 10; /* 确保在图片之上 (相对于 modal-content) */
+  /* 关键：确保按钮本身可以响应点击事件 */
   pointer-events: auto;
 }
 .modal-close:hover {
+  /* 保持或微调 hover 效果 */
   background: rgba(30, 30, 30, 0.9);
+  /* 应用相同的 translate 保持位置，只改变 scale */
   transform: translate(50%, -50%) scale(1.1);
   color: #fff;
 }
@@ -835,6 +816,11 @@ main.has-content {
   overflow-y: hidden;
 }
 
+@media (max-width: 768px) {
+  .katex { font-size: 1em; }
+  .latex-block { max-width: 100%; overflow-x: auto; }
+}
+
 .copy-button {
   background: #0071e3;
   color: white;
@@ -872,6 +858,10 @@ main.has-content {
 }
 .github-link:hover svg { fill: #0071e3; opacity: 1; }
 
+@media (max-width: 768px) {
+  .github-link { top: 0.5rem; right: 0.5rem; }
+  .github-link svg { width: 28px; height: 28px; }
+}
 
 .edit-button, .save-button, .cancel-button {
   padding: 6px 12px;
@@ -1001,5 +991,3 @@ main.has-content {
   padding: 2rem;
   font-style: italic;
 }
-
-/* --- END OF FILE App.css --- */
