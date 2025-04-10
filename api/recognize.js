@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     const modelConfig = {
       model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
-        temperature: 0,
+        temperature: 0.3,
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
