@@ -982,34 +982,3 @@ main.has-content {
   padding: 2rem;
   font-style: italic;
 }
-
-/* 初始页面专用样式 */
-main:not(.has-content) {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-/* 初始页面的 header 样式 */
-header.initial-page {
-  padding: 0;
-  margin-bottom: 0;
-}
-
-/* 初始页面的上传区域 */
-main:not(.has-content) .upload-section {
-  margin-top: -30rem; /* 将上传区域上移 */
-}
-
-/* 识别后的页面保持原有样式 */
-header.with-content {
-  /* 保持原有样式不变 */
-  margin-bottom: 1rem;
-  padding: 0;
-}
-
-/* 确保识别后的上传区域不受影响 */
-main.has-content .upload-section {
-  margin-top: 0;
-}
