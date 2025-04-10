@@ -999,7 +999,7 @@ header.initial-page {
 
 /* 初始页面的上传区域 */
 main:not(.has-content) .upload-section {
-  margin-top: -3rem; /* 将上传区域上移 */
+  margin-top: -30rem; /* 将上传区域上移 */
 }
 
 /* 识别后的页面保持原有样式 */
