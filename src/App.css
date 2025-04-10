@@ -93,14 +93,9 @@ body::before {
 
 header {
   text-align: center;
-  margin-bottom: -10;
-  padding: 2rem 0 0;
+  margin-bottom: 1rem;
+  padding: 0rem;
   position: relative;
-  display: flex; /* 新增 */
-  flex-direction: column; /* 新增 */
-  justify-content: center; /* 新增 */
-  align-items: center; /* 新增 */
-  min-height: 100vh; /* 新增 - 使 header 占据整个视口高度 */
 }
 
 header h1 {
@@ -127,7 +122,7 @@ header p {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
   flex-wrap: wrap;
 }
 
@@ -395,7 +390,6 @@ header p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 0; /* 新增 - 增加与标题的间距 */
 }
 
 .upload-zone.dragging {
@@ -445,7 +439,7 @@ header p {
 }
 
 .upload-hint {
-  margin-top: 0.5rem;
+  margin-top: 1rem;
   color: #86868b;
   font-size: 0.9rem;
   transition: all 0.3s ease;
@@ -489,8 +483,6 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* 新增 */
-  min-height: calc(100vh - 200px); /* 新增 - 根据实际情况调整 */
 }
 
 main.has-content {
@@ -504,9 +496,6 @@ main.has-content {
   max-width: 600px;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
-  margin: 0 auto; /* 新增 - 负 margin 抵消 header 的 padding */
-  padding-top: 1rem; /* 添加少量上边距 */
-
 }
 
 .upload-section.with-image {
@@ -992,4 +981,35 @@ main.has-content {
   color: #86868b;
   padding: 2rem;
   font-style: italic;
+}
+
+/* 初始页面专用样式 */
+main:not(.has-content) {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 初始页面的 header 样式 */
+header.initial-page {
+  padding: 0;
+  margin-bottom: 0;
+}
+
+/* 初始页面的上传区域 */
+main:not(.has-content) .upload-section {
+  margin-top: -3rem; /* 将上传区域上移 */
+}
+
+/* 识别后的页面保持原有样式 */
+header.with-content {
+  /* 保持原有样式不变 */
+  margin-bottom: 1rem;
+  padding: 0;
+}
+
+/* 确保识别后的上传区域不受影响 */
+main.has-content .upload-section {
+  margin-top: 0;
 }
