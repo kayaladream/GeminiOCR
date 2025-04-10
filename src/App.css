@@ -93,8 +93,8 @@ body::before {
 
 header {
   text-align: center;
-  margin-bottom: 1rem;
-  padding: 0rem;
+  margin-bottom: -10;
+  padding: 2rem 0 0;
   position: relative;
   display: flex; /* 新增 */
   flex-direction: column; /* 新增 */
@@ -127,7 +127,7 @@ header p {
   display: flex;
   gap: 1rem;
   justify-content: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
   flex-wrap: wrap;
 }
 
@@ -395,7 +395,7 @@ header p {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-top: 2rem; /* 新增 - 增加与标题的间距 */
+  margin-top: 0; /* 新增 - 增加与标题的间距 */
 }
 
 .upload-zone.dragging {
@@ -445,7 +445,7 @@ header p {
 }
 
 .upload-hint {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   color: #86868b;
   font-size: 0.9rem;
   transition: all 0.3s ease;
@@ -504,7 +504,9 @@ main.has-content {
   max-width: 600px;
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
-  margin: -3rem auto 0; /* 新增 - 负 margin 抵消 header 的 padding */
+  margin: 0 auto; /* 新增 - 负 margin 抵消 header 的 padding */
+  padding-top: 1rem; /* 添加少量上边距 */
+
 }
 
 .upload-section.with-image {
