@@ -34,7 +34,7 @@ const ADVANCED_PROMPT = `
 6.  **上下文校对与纠错：**
     *   在识别完成后，请仔细检查文本内容。
     *   利用上下文信息，修正识别结果中可能存在的错别字、拼写错误或明显的语法错误。
-    *   将你**修正过**的文字或词语用*斜体* (*italic*) 标记出来，以清晰展示修改痕跡。
+    *   将你**修正后**的文字或词语用*斜体* (*italic*) 标记出来，以清晰展示修改痕跡。
 
 7.  **输出要求：**
     *   直接输出处理后的内容，不要添加任何说明、前言或总结。
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
     const modelConfig = {
       model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
-        temperature: 0.3,
+        temperature: 0,
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
