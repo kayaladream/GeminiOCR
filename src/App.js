@@ -1,15 +1,14 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react'; // 引入基础 Hooks
-import { GoogleGenerativeAI } from "@google/generative-ai"; // 引入 Gemini API
-import 'katex/dist/katex.min.css'; // 引入 KaTeX 样式
-import ReactMarkdown from 'react-markdown'; // 引入 Markdown 渲染组件
-import remarkMath from 'remark-math'; // 引入 remark 插件以支持数学公式语法
-import rehypeKatex from 'rehype-katex'; // 引入 rehype 插件以使用 KaTeX 渲染数学公式
-import { marked } from 'marked'; // <-- 新增：引入 marked 用于 Markdown 转 HTML
-import TurndownService from 'turndown'; // <-- 新增：引入 turndown 用于 HTML 转 Markdown
-import DOMPurify from 'dompurify'; // <-- 新增：引入 DOMPurify 用于 HTML 清理，防止 XSS
-import './App.css'; // 引入 CSS 样式
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import 'katex/dist/katex.min.css';
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import { marked } from 'marked';
+import TurndownService from 'turndown';
+import DOMPurify from 'dompurify';
+import './App.css';
 
-// --- Gemini API 初始化与配置 (保持不变) ---
 const genAI = new GoogleGenerativeAI(process.env.REACT_APP_GEMINI_API_KEY);
 const generationConfig = {
   temperature: 0,
@@ -17,9 +16,7 @@ const generationConfig = {
   topK: 1,
   maxOutputTokens: 8192,
 };
-// --- Gemini API 初始化与配置结束 ---
 
-// --- 预处理函数 preprocessText (保持不变) ---
 const preprocessText = (text) => {
   if (!text) return '';
   const tables = [];
@@ -58,9 +55,7 @@ const preprocessText = (text) => {
   });
   return text.trim();
 };
-// --- 预处理函数 preprocessText 结束 ---
 
-// --- 文件转 Base64 函数 fileToGenerativePart (保持不变) ---
 const fileToGenerativePart = async (file) => {
   const reader = new FileReader();
   return new Promise((resolve) => {
@@ -75,81 +70,63 @@ const fileToGenerativePart = async (file) => {
     reader.readAsDataURL(file);
   });
 };
-// --- 文件转 Base64 函数 fileToGenerativePart 结束 ---
 
-// --- 新增：初始化 Turndown 服务 (用于 HTML 转 Markdown) ---
 const turndownService = new TurndownService({
-    headingStyle: 'atx', // 标题样式使用 #
-    hr: '---', // 水平线样式
-    bulletListMarker: '*', // 无序列表标记
-    codeBlockStyle: 'fenced', // 代码块样式使用 ```
-    emDelimiter: '*', // 斜体标记使用 *
-    strongDelimiter: '**', // 粗体标记使用 **
+    headingStyle: 'atx',
+    hr: '---',
+    bulletListMarker: '*',
+    codeBlockStyle: 'fenced',
+    emDelimiter: '*',
+    strongDelimiter: '**',
 });
-// --- 新增：添加 Turndown 规则以尝试保留表格结构 ---
 turndownService.keep(['table', 'thead', 'tbody', 'tr', 'th', 'td']);
-// --- 新增：添加 Turndown 规则以尝试转换 KaTeX 公式回 Markdown ---
-// 注意：这个规则比较基础，可能无法完美处理所有复杂的 KaTeX 结构
 turndownService.addRule('katex', {
     filter: function (node, options) {
-      // 匹配 KaTeX 生成的 display 或 inline 的 span 元素
       return (
         (node.nodeName === 'SPAN' && node.classList.contains('katex-display')) ||
         (node.nodeName === 'SPAN' && node.classList.contains('katex'))
       );
     },
     replacement: function (content, node, options) {
-      // 尝试从 KaTeX 的 annotation 中提取原始 LaTeX 公式
       const latexSource = node.querySelector('annotation[encoding="application/x-tex"]');
       if (latexSource) {
         const formula = latexSource.textContent;
         if (node.classList.contains('katex-display')) {
-          // 块级公式
           return `\n\n$$${formula}$$\n\n`;
         } else {
-          // 行内公式
           return `$${formula}$`;
         }
       }
-      // 如果找不到 annotation，或者规则不匹配，返回原始 HTML 或空字符串
-      // console.warn("无法从 Katex 转换回 Markdown:", node.outerHTML); // 调试信息
-      return node.outerHTML; // 或者返回 '' 或 content
+      return node.outerHTML;
     }
 });
-// --- 新增：初始化 Turndown 服务结束 ---
 
 
 function App() {
-  // --- 状态 State (大部分保持不变) ---
-  const [images, setImages] = useState([]); // 存储图片预览 URL
-  const [results, setResults] = useState([]); // 存储每张图片的识别结果 (Markdown 格式)
-  const [currentIndex, setCurrentIndex] = useState(0); // 当前显示的图片/结果索引
-  const [isLoading, setIsLoading] = useState(false); // 全局加载状态 (上传、URL 处理)
-  const [isDragging, setIsDragging] = useState(false); // 拖放区悬停状态
-  const [isDraggingGlobal, setIsDraggingGlobal] = useState(false); // 全局拖放检测状态
-  const resultRef = useRef(null); // 结果区域引用
-  const dropZoneRef = useRef(null); // 拖放区域引用
-  const [showUrlInput, setShowUrlInput] = useState(false); // 是否显示 URL 输入框
-  const [imageUrl, setImageUrl] = useState(''); // URL 输入框内容
-  const [showModal, setShowModal] = useState(false); // 是否显示图片放大模态框
-  const [streamingText, setStreamingText] = useState(''); // 当前流式传输的文本 (用于实时显示)
-  const [isStreaming, setIsStreaming] = useState(false); // 是否正在流式接收识别结果
+  const [images, setImages] = useState([]);
+  const [results, setResults] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
+  const resultRef = useRef(null);
+  const dropZoneRef = useRef(null);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
 
-  // --- 模态框状态 (保持不变) ---
   const [isDraggingModal, setIsDraggingModal] = useState(false);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [modalOffset, setModalOffset] = useState({ x: 0, y: 0 });
   const [modalScale, setModalScale] = useState(1);
 
-  // --- 编辑模式状态 (修改) ---
-  const [isEditing, setIsEditing] = useState(false); // 是否处于编辑模式
-  const [editText, setEditText] = useState(''); // 编辑时的 *原始 Markdown* 文本状态
-  // const editTextAreaRef = useRef(null); // 旧的: Textarea 引用
-  const editDivRef = useRef(null); // <-- 修改：使用 div 的引用来实现富文本编辑
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState('');
+  const editDivRef = useRef(null);
 
-  // --- 文件处理函数 handleFile (保持不变, 内部逻辑未修改) ---
   const handleFile = useCallback(async (file, index) => {
-    // ... (内部逻辑完全保持不变，包括调用 API、流式处理、调用 preprocessText) ...
     if (file.type.startsWith('image/')) {
       try {
         setIsStreaming(true);
@@ -157,7 +134,7 @@ function App() {
         setIsEditing(false);
         setResults(prev => {
           const newResults = [...prev];
-          newResults[index] = ''; // 清空当前结果以显示加载
+          newResults[index] = '';
           return newResults;
         });
 
@@ -250,7 +227,6 @@ function App() {
           setStreamingText(finalFormattedText);
 
         } else {
-          // 生产环境 Vercel API 调用 (保持不变)
           const fileReader = new FileReader();
           const imageData = await new Promise((resolve) => {
             fileReader.onloadend = () => {
@@ -320,16 +296,11 @@ function App() {
         setIsLoading(false);
       }
     }
-  }, []); // 依赖为空，因为它不依赖组件内部可变状态
+  }, []);
 
-  // --- 粘贴处理 useEffect (逻辑保持不变, 注意 isEditing 依赖) ---
   useEffect(() => {
     const handlePaste = async (e) => {
-      // <-- 修改：检查焦点是否在 contentEditable div 内 -->
       if (isEditing && editDivRef.current && editDivRef.current.contains(e.target)) {
-        // 允许在 contentEditable div 内部进行默认粘贴
-        // 注意：默认粘贴会插入 HTML，可能需要额外处理或依赖 contentEditable 的行为
-        // 如果想完全控制粘贴内容为纯文本，需要在这里阻止默认行为并处理 item.getAsString
         return;
       }
        if (showModal) {
@@ -350,7 +321,7 @@ function App() {
               setImages(prev => [...prev, imageUrl]);
               setResults(prev => [...prev, '']);
               setCurrentIndex(newIndex);
-              setIsEditing(false); // 粘贴新图片时退出编辑模式
+              setIsEditing(false);
               await handleFile(file, newIndex);
             } catch (error) {
               console.error('处理粘贴的图片时出错:', error);
@@ -375,10 +346,8 @@ function App() {
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-    // 依赖中包含 isEditing，因为粘贴行为在编辑模式下不同
   }, [images.length, handleFile, isEditing, showModal]);
 
-  // --- 并发处理函数 concurrentProcess (保持不变) ---
   const concurrentProcess = async (items, processor, maxConcurrent = 5) => {
     let activePromises = 0;
     const queue = [...items.entries()];
@@ -408,7 +377,6 @@ function App() {
     });
   };
 
-  // --- 图片上传处理函数 handleImageUpload (保持不变) ---
   const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -419,7 +387,7 @@ function App() {
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
-      setIsEditing(false); // 上传新图片退出编辑模式
+      setIsEditing(false);
       await concurrentProcess(
         files,
         (file, fileIndex) => handleFile(file, startIndex + fileIndex),
@@ -436,37 +404,33 @@ function App() {
     }
   };
 
-  // --- 图片导航函数 (保持不变) ---
   const handlePrevImage = () => {
     if (currentIndex > 0 && !isLoading && !isStreaming) {
       const prevIndex = currentIndex - 1;
       setCurrentIndex(prevIndex);
-      // isEditing 状态会在下面的 currentIndex effect 中被重置
     }
   };
   const handleNextImage = () => {
     if (currentIndex < images.length - 1 && !isLoading && !isStreaming) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
-      // isEditing 状态会在下面的 currentIndex effect 中被重置
     }
   };
 
-  // --- 全局拖放 useEffect 和处理函数 (保持不变) ---
   useEffect(() => {
-    const handleGlobalDragEnter = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) { if (!isDraggingGlobal) { setIsDraggingGlobal(true); } } };
-    const handleGlobalDragOver = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); };
-    const handleGlobalDragLeave = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); if (!e.relatedTarget || e.relatedTarget === null || e.relatedTarget === document.documentElement) { setIsDraggingGlobal(false); setIsDragging(false); } };
-    const handleGlobalDrop = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); if (dropZoneRef.current && !dropZoneRef.current.contains(e.target)) { setIsDraggingGlobal(false); setIsDragging(false); } };
+    const handleGlobalDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer && Array.from(e.dataTransfer.types).includes('Files')) { if (!isDraggingGlobal) { setIsDraggingGlobal(true); } } };
+    const handleGlobalDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
+    const handleGlobalDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); if (!e.relatedTarget || e.relatedTarget === null || e.relatedTarget === document.documentElement) { setIsDraggingGlobal(false); setIsDragging(false); } };
+    const handleGlobalDrop = (e) => { e.preventDefault(); e.stopPropagation(); if (dropZoneRef.current && !dropZoneRef.current.contains(e.target)) { setIsDraggingGlobal(false); setIsDragging(false); } };
     window.addEventListener('dragenter', handleGlobalDragEnter);
     window.addEventListener('dragover', handleGlobalDragOver);
     window.addEventListener('dragleave', handleGlobalDragLeave);
     window.addEventListener('drop', handleGlobalDrop);
-    return () => { /* ... remove listeners ... */ window.removeEventListener('dragenter', handleGlobalDragEnter); window.removeEventListener('dragover', handleGlobalDragOver); window.removeEventListener('dragleave', handleGlobalDragLeave); window.removeEventListener('drop', handleGlobalDrop); };
+    return () => { window.removeEventListener('dragenter', handleGlobalDragEnter); window.removeEventListener('dragover', handleGlobalDragOver); window.removeEventListener('dragleave', handleGlobalDragLeave); window.removeEventListener('drop', handleGlobalDrop); };
   }, [isDraggingGlobal]);
-  const handleDragEnter = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.types.includes('Files')) { setIsDragging(true); } };
-  const handleDragOver = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); };
-  const handleDragLeave = (e) => { /* ... */ e.preventDefault(); e.stopPropagation(); if (!dropZoneRef.current.contains(e.relatedTarget)) { setIsDragging(false); } };
+  const handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer.types.includes('Files')) { setIsDragging(true); } };
+  const handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
+  const handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); if (!dropZoneRef.current.contains(e.relatedTarget)) { setIsDragging(false); } };
   const handleDrop = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -501,7 +465,7 @@ function App() {
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
-      setIsEditing(false); // 拖放上传退出编辑模式
+      setIsEditing(false);
       await concurrentProcess(
         files,
         (file, fileIndex) => handleFile(file, startIndex + fileIndex),
@@ -515,7 +479,6 @@ function App() {
     }
   };
 
-  // --- URL 提交处理函数 handleUrlSubmit (保持不变) ---
   const handleUrlSubmit = async (e) => {
     e.preventDefault();
     if (!imageUrl) return;
@@ -582,7 +545,7 @@ function App() {
       setImages(prev => [...prev, imageUrlObject]);
       setResults(prev => [...prev, '']);
       setCurrentIndex(newIndex);
-      setIsEditing(false); // URL 上传退出编辑模式
+      setIsEditing(false);
       await handleFile(file, newIndex);
       setImageUrl('');
 
@@ -595,7 +558,6 @@ function App() {
     }
   };
 
-  // --- 图片点击放大、关闭模态框处理函数 (保持不变) ---
   const handleImageClick = () => {
     if (!images[currentIndex]) return;
     setModalPosition({ x: 0, y: 0 });
@@ -606,12 +568,9 @@ function App() {
     setShowModal(false);
   };
 
-  // --- 复制文本处理函数 handleCopyText (逻辑不变: 编辑模式复制 editText, 否则复制 results[currentIndex]) ---
   const handleCopyText = () => {
-    // <-- 修改：现在 editText 在编辑模式下也是原始 Markdown -->
     const textToCopy = isEditing ? editText : results[currentIndex];
     if (textToCopy != null && !isStreaming) {
-        // 移除 Markdown 获取纯文本 (保持不变)
         const plainText = textToCopy
             .replace(/\*\*(.*?)\*\*/g, '$1')
             .replace(/\*(.*?)\*/g, '$1')
@@ -622,18 +581,18 @@ function App() {
 
         navigator.clipboard.writeText(plainText.trim())
             .then(() => {
-                const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button'); // 查找当前活动的复制按钮
+                const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
                  if (button) {
-                     const originalText = button.dataset.originalText || button.textContent; // 优先从 data 属性获取，或从文本内容获取
-                     button.dataset.originalText = originalText; // 存储原始文本
+                     const originalText = button.dataset.originalText || button.textContent;
+                     button.dataset.originalText = originalText;
                      button.textContent = '已复制';
                      button.classList.add('copied');
                      setTimeout(() => {
                          const currentButton = document.querySelector('.copy-button.copied');
                          if (currentButton && currentButton.textContent === '已复制') {
-                             currentButton.textContent = currentButton.dataset.originalText || '复制内容'; // 恢复
+                             currentButton.textContent = currentButton.dataset.originalText || '复制内容';
                              currentButton.classList.remove('copied');
-                             delete currentButton.dataset.originalText; // 清理
+                             delete currentButton.dataset.originalText;
                          }
                      }, 1500);
                  }
@@ -646,132 +605,84 @@ function App() {
 };
 
 
-  // --- 模态框拖拽、滚轮、全局事件监听 (保持不变) ---
-  const handleModalMouseDown = (e) => { /* ... */ if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
-  const handleModalWheel = (e) => { /* ... */ e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
+  const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
+  const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
   useEffect(() => {
-    const handleMove = (e) => { /* ... */ const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; setModalPosition({ x: clientX - modalOffset.x, y: clientY - modalOffset.y, }); };
-    const handleEnd = () => { /* ... */ setIsDraggingModal(false); const modalContent = document.querySelector('.modal-content'); if (modalContent) { modalContent.style.cursor = 'grab'; modalContent.style.transition = 'transform 0.1s ease-out'; } };
-    if (isDraggingModal) { /* ... add listeners ... */ window.addEventListener('mousemove', handleMove, { capture: true }); window.addEventListener('mouseup', handleEnd, { capture: true }); window.addEventListener('touchmove', handleMove, { passive: false }); window.addEventListener('touchend', handleEnd); }
-    return () => { /* ... remove listeners ... */ window.removeEventListener('mousemove', handleMove, { capture: true }); window.removeEventListener('mouseup', handleEnd, { capture: true }); window.removeEventListener('touchmove', handleMove); window.removeEventListener('touchend', handleEnd); };
+    const handleMove = (e) => { const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; setModalPosition({ x: clientX - modalOffset.x, y: clientY - modalOffset.y, }); };
+    const handleEnd = () => { setIsDraggingModal(false); const modalContent = document.querySelector('.modal-content'); if (modalContent) { modalContent.style.cursor = 'grab'; modalContent.style.transition = 'transform 0.1s ease-out'; } };
+    if (isDraggingModal) { window.addEventListener('mousemove', handleMove, { capture: true }); window.addEventListener('mouseup', handleEnd, { capture: true }); window.addEventListener('touchmove', handleMove, { passive: false }); window.addEventListener('touchend', handleEnd); }
+    return () => { window.removeEventListener('mousemove', handleMove, { capture: true }); window.removeEventListener('mouseup', handleEnd, { capture: true }); window.removeEventListener('touchmove', handleMove); window.removeEventListener('touchend', handleEnd); };
   }, [isDraggingModal, modalOffset]);
 
 
-  // --- 编辑模式处理函数 (修改) ---
-
-  // 点击“编辑”按钮
   const handleEditClick = () => {
       if (!isStreaming && results[currentIndex] != null) {
           const currentMarkdown = results[currentIndex];
-          setEditText(currentMarkdown); // <-- 修改：将当前结果的 *原始 Markdown* 存入 editText 状态
-          setIsEditing(true); // 进入编辑模式
-          // 注意：实际的 HTML 渲染和聚焦操作将在下面的 useEffect 中完成
+          setEditText(currentMarkdown);
+          setIsEditing(true);
       }
   };
 
-  // --- 新增：useEffect 用于处理进入编辑模式时的内容渲染和聚焦 ---
   useEffect(() => {
       if (isEditing && editDivRef.current) {
-          // 1. 将存储的 Markdown (editText) 转换为 HTML
-          // 使用 marked.parse (新版本用法)
-          const rawHtml = marked.parse(editText || '', { breaks: true }); // 启用 GFM 换行符
-
-          // 2. 清理 HTML (安全起见)
+          const rawHtml = marked.parse(editText || '', { breaks: true });
           const safeHtml = DOMPurify.sanitize(rawHtml);
-
-          // 3. 将清理后的 HTML 设置为 contentEditable div 的内容
           editDivRef.current.innerHTML = safeHtml;
-
-          // 4. 聚焦并将光标移到末尾 (使用 setTimeout 确保 DOM 更新完成)
            setTimeout(() => {
               if (editDivRef.current) {
                   editDivRef.current.focus();
-                  // 尝试将光标移到末尾 (兼容性可能略有差异)
                   const range = document.createRange();
                   const sel = window.getSelection();
-                  if(sel && editDivRef.current.childNodes.length > 0) { // 检查是否有子节点
-                       // 选择最后一个子节点的末尾
+                  if(sel && editDivRef.current.childNodes.length > 0) {
                        range.setStart(editDivRef.current.childNodes[editDivRef.current.childNodes.length - 1], editDivRef.current.childNodes[editDivRef.current.childNodes.length - 1].textContent?.length ?? 0);
-                       range.collapse(true); // 折叠到起始点 (即末尾)
+                       range.collapse(true);
                        sel.removeAllRanges();
                        sel.addRange(range);
-                  } else if (sel) { // 如果没有子节点，直接聚焦
+                  } else if (sel) {
                        range.selectNodeContents(editDivRef.current);
-                       range.collapse(false); // 折叠到容器末尾
+                       range.collapse(false);
                        sel.removeAllRanges();
                        sel.addRange(range);
                   }
               }
-           }, 50); // 短暂延迟
+           }, 50);
       } else if (!isEditing && editDivRef.current) {
-          // 如果退出编辑模式，清空编辑区内容 (可选)
-          // editDivRef.current.innerHTML = '';
+
       }
-    // 依赖 isEditing。当 isEditing 变化时触发此 effect。
-    // 注意：不依赖 editText，因为 editText 的变化应该由用户输入触发，并通过 onInput 处理。
-    // 如果依赖 editText，会导致每次输入都重新渲染整个 HTML，光标会跳动。
   }, [isEditing]);
 
-  // --- 新增：处理 contentEditable div 的输入事件 ---
   const handleInput = (e) => {
-      // 1. 获取当前编辑器的 HTML 内容
       const currentHtml = e.currentTarget.innerHTML;
-
-      // 2. 将 HTML 转换回 Markdown
       const newMarkdown = turndownService.turndown(currentHtml);
-
-      // 3. 更新存储 *原始 Markdown* 的状态 (editText)
-      // ！！非常重要：这里只更新 state，不修改 e.currentTarget.innerHTML
-      // 否则会覆盖用户的输入，导致无法正常编辑
       setEditText(newMarkdown);
   };
 
 
-  // 点击“保存”按钮
   const handleSaveEdit = () => {
-      // <-- 修改：editText 已经是 handleInput 更新后的最新 Markdown -->
       setResults(prevResults => {
           const newResults = [...prevResults];
-          // 直接使用 editText 中最新的 Markdown 更新结果数组
           newResults[currentIndex] = editText;
           return newResults;
       });
-      setIsEditing(false); // 退出编辑模式
-      // streamingText 不需要显式设置，视图模式会读取更新后的 results
+      setIsEditing(false);
   };
 
-  // 点击“取消”按钮
   const handleCancelEdit = () => {
-      setIsEditing(false); // 退出编辑模式
-      setEditText(''); // 清空临时 Markdown 状态
-      // editDivRef 的内容会在 isEditing 变化的 useEffect 中被处理 (如果需要清空的话)
+      setIsEditing(false);
+      setEditText('');
   };
 
-  // // 编辑区域文本变化 (这个函数不再需要，因为我们使用 onInput)
-  // const handleEditTextChange = (e) => {
-  //     setEditText(e.target.value);
-  // };
 
-  // --- useEffect: 切换图片时退出编辑模式 (逻辑微调) ---
   useEffect(() => {
-      // 当 currentIndex 变化时（切换图片）
-      setIsEditing(false); // 退出编辑模式
-      setEditText('');     // 清空临时编辑 Markdown 状态
-
-      // 更新流式文本/显示文本状态以反映新选中的图片的结果
-      // 如果新图片有结果，则显示结果；否则显示空字符串（或加载提示，如果适用）
-      // 这里的 results[currentIndex] 已经是处理过的 Markdown
+      setIsEditing(false);
+      setEditText('');
       setStreamingText(results[currentIndex] || '');
-
-    // 依赖于 currentIndex 和 results 数组 (当 results 更新时，例如识别完成，也需要更新显示)
   }, [currentIndex, results]);
 
 
-  // --- JSX 渲染 ---
   return (
     <div className="app">
        <header>
-         {/* GitHub 链接 (保持不变) */}
         <a
           href="https://github.com/kayaladream/GeminiOCR"
           target="_blank"
@@ -783,7 +694,6 @@ function App() {
              <path fillRule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
            </svg>
         </a>
-         {/* 标题和描述 (保持不变) */}
         <h1>GeminiOCR - 高精度OCR识别</h1>
         <p>
             智能识别多国语言及手写字体、表格等。识别出的表格是 Markdown 格式，请到{' '}
@@ -794,9 +704,7 @@ function App() {
         </p>
       </header>
 
-      {/* 主内容区 */}
       <main className={images.length > 0 ? 'has-content' : ''}>
-         {/* 上传区域 (保持不变) */}
          <div className={`upload-section ${images.length > 0 ? 'with-image' : ''}`}>
           <div
             ref={dropZoneRef}
@@ -860,18 +768,14 @@ function App() {
           )}
         </div>
 
-        {/* 结果显示区域 */}
         {(images.length > 0 || isLoading || isStreaming) && (
           <div className="result-section">
             <div className="result-container" ref={resultRef}>
-                {/* 初始加载提示 (保持不变) */}
                 {isLoading && !isStreaming && results[currentIndex] == null && !isEditing &&
                     <div className="loading result-loading">等待识别...</div>
                 }
 
-                 {/* --- 显示 视图模式 或 编辑模式 --- */}
 
-                 {/* 视图模式 (逻辑不变) */}
                  {((results[currentIndex] != null && !isEditing) || isStreaming) && ! (isLoading && !isStreaming && results[currentIndex] == null && !isEditing) && (
                     <div className="result-text">
                       <div className="result-header">
@@ -881,7 +785,6 @@ function App() {
                          {results[currentIndex] != null && !isStreaming && !isEditing && (
                             <div style={{ display: 'flex', gap: '8px'}}>
                                 <button className="edit-button" onClick={handleEditClick}>编辑</button>
-                                {/* <-- 修改：确保复制按钮有唯一的 class 或 ID --> */}
                                 <button className="copy-button view-copy-button" onClick={handleCopyText}>复制内容</button>
                             </div>
                          )}
@@ -902,7 +805,6 @@ function App() {
                     </div>
                  )}
 
-                {/* --- 编辑模式 (修改：使用 contentEditable div) --- */}
                 {isEditing && (
                     <div className="result-text editing-area">
                          <div className="result-header">
@@ -910,34 +812,21 @@ function App() {
                             <div>
                                 <button className="save-button" onClick={handleSaveEdit}>保存</button>
                                 <button className="cancel-button" onClick={handleCancelEdit}>取消</button>
-                                 {/* <-- 修改：确保复制按钮有唯一的 class 或 ID --> */}
                                  <button className="copy-button edit-copy-button" onClick={handleCopyText}>复制编辑内容</button>
                             </div>
                         </div>
-                        {/* --- 修改：用 div 替换 textarea --- */}
                         <div
-                            ref={editDivRef} // 使用新的 ref
-                            contentEditable={true} // 开启内容编辑功能
-                            className="edit-content-editable" // 应用新的 CSS 类
-                            onInput={handleInput} // 绑定输入事件处理器 (HTML -> Markdown)
-                            // 阻止 React 关于 contentEditable 的警告
+                            ref={editDivRef}
+                            contentEditable={true}
+                            className="edit-content-editable"
+                            onInput={handleInput}
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
-                            spellCheck="false" // 可选：禁用浏览器拼写检查
-                            // 注意：不再需要 value 和 onChange
+                            spellCheck="false"
                         />
-                        {/* <textarea
-                            ref={editTextAreaRef} // 旧的 ref
-                            value={editText} // 旧的 value 绑定
-                            onChange={handleEditTextChange} // 旧的 change handler
-                            className="edit-textarea"
-                            aria-label={`编辑识别结果 ${currentIndex + 1}`}
-                        /> */}
-                        {/* --- 修改结束 --- */}
                     </div>
                 )}
 
-                {/* 无结果占位符 (保持不变) */}
                 {!isLoading && !isStreaming && results[currentIndex] == null && !isEditing && images.length > 0 && (
                     <div className="result-placeholder">当前图片无识别结果或识别失败。</div>
                 )}
@@ -947,11 +836,9 @@ function App() {
       </main>
 
       {showModal && images[currentIndex] && (
-        // modal-overlay 保持原样 (包括 pointer-events: none)
         <div className="modal-overlay">
           <div
             className="modal-content"
-            // onClick 不需要，因为 overlay 是 pointer-events: none
             onMouseDown={handleModalMouseDown}
             onWheel={handleModalWheel}
             onTouchStart={handleModalMouseDown}
@@ -961,16 +848,11 @@ function App() {
               transition: isDraggingModal ? 'none' : 'transform 0.1s ease-out',
               touchAction: 'none',
               userSelect: 'none',
-              // 确保 modal-content 有 relative 定位，以便内部 absolute 定位的按钮正确参考
-              // 如果 CSS 中没有，可以在这里加，但最好在 CSS 文件中处理
-              // position: 'relative',
             }}
           >
             <img src={images[currentIndex]} alt="放大预览" draggable="false" style={{ pointerEvents: 'none', userSelect: 'none' }} />
-            {/* 关闭按钮作为 modal-content 的子元素 */}
             <button
               className="modal-close" aria-label="关闭预览" onClick={handleCloseModal}
-              // 阻止点击按钮时触发 mousedown/touchstart 导致图片拖动
               onMouseDown={(e) => e.stopPropagation()} onTouchStart={(e) => e.stopPropagation()}
             >×</button>
           </div>
