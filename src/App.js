@@ -222,7 +222,7 @@ function App() {
 
               * Use contextual information to correct potential typos, spelling errors, or obvious grammatical mistakes in the recognition results.
 
-              * Mark the corrected words or phrases using bold-italic formatting (e.g., ***corrected text***) to clearly show the modifications.
+              * Mark the words or phrases you have corrected using italic formatting to clearly show the modifications.
 
           7.  **Output Requirements:**
 
