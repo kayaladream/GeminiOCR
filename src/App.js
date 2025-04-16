@@ -696,11 +696,7 @@ function App() {
         </a>
         <h1>GeminiOCR - 高精度OCR识别</h1>
         <p>
-            智能识别多国语言及手写字体、表格等。识别出的表格是 Markdown 格式，请到{' '}
-            <a href="https://tableconvert.com/zh-cn/markdown-to-markdown" target="_blank" rel="noopener noreferrer">
-                这里
-            </a>{' '}
-            在线转换。
+            智能识别多国语言及手写字体、表格等，低置信度字符突出显示、智能语义纠错与标注。
         </p>
       </header>
 
