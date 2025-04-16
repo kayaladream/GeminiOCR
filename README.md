@@ -29,9 +29,9 @@
 
 **注意：将Vercel的“函数最大持续时间”从默认的10秒调整为60秒，以确保Gemini API有足够的处理时间，避免因超时而中断请求。**
 
-- 转到您的Vercel项目
-- 打开"Settings"
-- 点击"Functions" → "Advanced Settings" → "Function Max Duration"，将值从10更改为60，保存后重新部署。
+1. 转到您的Vercel项目
+2. 打开"Settings"
+3. 点击"Functions" → "Advanced Settings" → "Function Max Duration"，将值从10更改为60，保存后重新部署。
 
 ## Gemini API密钥获取流程
 
