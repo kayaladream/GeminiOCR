@@ -499,7 +499,7 @@ main.has-content {
 }
 
 .upload-section.with-image {
-  width: 50%;  /* 左侧区域占父容器宽度的 50% */
+  width: 50%;
   max-width: 600px;
 }
 
@@ -524,9 +524,9 @@ main.has-content {
 .upload-section.with-image .upload-zone {
   padding: 3rem;
   margin-bottom: 1.5rem;
-  min-height: 100px;  /* 设置最小高度 */
-  border-radius: 15px; /* 设置圆角 */
-  display: flex; /* 保持 flex 布局让内部元素居中等 */
+  min-height: 100px;
+  border-radius: 15px;
+  display: flex;
   min-height: auto;
 }
 
@@ -682,7 +682,6 @@ main.has-content {
 }
 
 .modal-overlay {
-  /* 保持原样 */
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   background: transparent;
@@ -691,14 +690,11 @@ main.has-content {
   justify-content: center;
   z-index: 999;
   animation: fadeIn 0.3s ease-out;
-  /* 关键：保持 pointer-events: none 以允许底层交互且点击遮罩无效 */
   pointer-events: none;
 }
 
 .modal-content {
-  /* 保持大部分原样 */
-  /* position: relative; /* 如果原来没有，需要添加 */
-  position: relative; /* 确保为关闭按钮提供定位上下文 */
+  position: relative;
   max-width: 90vw;
   max-height: 90vh;
   background: transparent;
@@ -706,13 +702,10 @@ main.has-content {
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
   animation: scaleIn 0.3s ease-out;
   cursor: grab;
-  /* 关键：允许内容溢出，以便按钮能在视觉上跑到外面 */
   overflow: visible;
-  /* 关键：让 modal-content 自身可以响应鼠标事件（拖动等），并允许子元素响应 */
   pointer-events: auto;
 }
 .modal-content img {
-  /* 保持原样 */
   display: block;
   max-width: 100%;
   max-height: 90vh;
@@ -724,38 +717,29 @@ main.has-content {
   -webkit-user-drag: none;
 }
 
-/* 修改：关闭按钮样式 */
 .modal-close {
   position: absolute;
-  /* 定位基准点在 modal-content 的右上角内部 */
-  top: 0;  /* 距离 modal-content 顶部 0px */
-  right: 0; /* 距离 modal-content 右侧 0px */
-  /* 使用 transform 将按钮视觉上移出边界 */
-  /* translate(50%, -50%) 将按钮中心点放在右上角顶点，一半在外 */
+  top: 0;
+  right: 0;
   transform: translate(50%, -50%);
-  /* 你可以调整百分比来控制按钮移出多少，例如 translate(70%, -70%) 让更多部分在外面 */
-
-  /* 保持或微调原来的尺寸和视觉样式 */
+  
   width: 40px; height: 40px;
   border-radius: 50%;
-  background: rgba(60, 60, 60, 0.7); /* 使用稍暗的背景色，在透明背景上更清晰 */
-  border: 1px solid rgba(255, 255, 255, 0.5); /* 可选：加个白色半透明边框 */
+  background: rgba(60, 60, 60, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   font-size: 24px;
-  color: white; /* 白色叉号 */
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); /* 调整阴影 */
-  transition: all 0.2s ease; /* 调整过渡效果 */
-  z-index: 10; /* 确保在图片之上 (相对于 modal-content) */
-  /* 关键：确保按钮本身可以响应点击事件 */
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  z-index: 10;
   pointer-events: auto;
 }
 .modal-close:hover {
-  /* 保持或微调 hover 效果 */
   background: rgba(30, 30, 30, 0.9);
-  /* 应用相同的 translate 保持位置，只改变 scale */
   transform: translate(50%, -50%) scale(1.1);
   color: #fff;
 }
