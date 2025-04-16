@@ -53,7 +53,7 @@ You are a professional OCR assistant. Please recognize the text content in the i
 
     * Use contextual information to correct potential typos, spelling errors, or obvious grammatical mistakes in the recognition results.
 
-    * Mark the words or phrases you have corrected using italic formatting to clearly show the modifications.
+    * Mark the words or phrases you have corrected using *italic* formatting to clearly show the modifications.
 
 7.  **Output Requirements:**
 
