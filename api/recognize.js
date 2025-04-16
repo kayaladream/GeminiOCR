@@ -60,9 +60,7 @@ You are a professional OCR assistant. Please recognize the text content in the i
     * Directly output the processed content without adding any explanations, preambles, or summaries.
 `;
 
-// 验证支持的图片类型
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-// Vercel最大执行时间60秒，设置为55秒留出处理时间
 const PROCESS_TIMEOUT = 55000; 
 
 export default async function handler(req, res) {
@@ -71,7 +69,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: '只支持POST请求' });
   }
 
-  // 添加响应结束检查
   let responseEnded = false;
   req.on('close', () => {
     if (!responseEnded) {
@@ -83,31 +80,28 @@ export default async function handler(req, res) {
   try {
     const { imageData, mimeType } = req.body;
     
-    // 增强参数验证
     if (!imageData || !mimeType) {
       console.error('[ERROR] 缺少参数:', { imageData: !!imageData, mimeType: !!mimeType });
       return res.status(400).json({ error: '缺少imageData或mimeType参数' });
     }
 
-    // 添加输入验证增强
     if (!VALID_MIME_TYPES.includes(mimeType)) {
       return res.status(415).json({ 
         error: `不支持的图片类型，仅支持: ${VALID_MIME_TYPES.join(', ')}`
       });
     }
 
-    if (imageData.length > 5 * 1024 * 1024) { // 5MB限制
+    if (imageData.length > 5 * 1024 * 1024) {
       return res.status(413).json({ error: '图片大小超过5MB限制' });
     }
 
     console.log('[LOG] 收到请求，图片类型:', mimeType);
 
-    // 初始化模型
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const modelConfig = {
       model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
-        temperature: 0,
+        temperature: 0.1,
         topP: 0.95,
         topK: 40,
         maxOutputTokens: 8192,
@@ -125,7 +119,6 @@ export default async function handler(req, res) {
 
     console.log('[LOG] 向Gemini发送提示词:', ADVANCED_PROMPT.slice(0, 31) + '...');
 
-    // 添加请求超时处理（针对Vercel的60秒限制）
     const timeoutPromise = new Promise((_, reject) => {
       setTimeout(() => {
         reject(new Error(`处理超时（超过${PROCESS_TIMEOUT/1000}秒）`));
@@ -134,7 +127,6 @@ export default async function handler(req, res) {
 
     console.log('[LOG] 开始调用模型:', modelConfig.model);
     
-    // 使用Promise.race实现超时控制
     const result = await Promise.race([
       model.generateContentStream([ADVANCED_PROMPT, imagePart]),
       timeoutPromise
@@ -147,7 +139,7 @@ export default async function handler(req, res) {
     });
 
     for await (const chunk of result.stream) {
-      if (responseEnded) break; // 如果客户端已断开则停止处理
+      if (responseEnded) break; 
       const chunkText = chunk.text();
       res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
     }
@@ -157,7 +149,7 @@ export default async function handler(req, res) {
     console.log('[LOG] 请求处理完成');
 
   } catch (error) {
-    if (responseEnded) return; // 如果响应已结束则不再处理错误
+    if (responseEnded) return; 
     
     console.error('[ERROR] 处理失败:', error.message);
     console.error(error.stack);
