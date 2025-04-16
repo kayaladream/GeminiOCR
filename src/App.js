@@ -148,61 +148,34 @@ function App() {
           const imagePart = await fileToGenerativePart(file);
           const rulesPrompt = `
           You are a professional OCR assistant. Please recognize the text content in the image and output it, adhering to the following specifications and requirements:
-
           1.  **Mathematical Formula Specification:**
-
               * Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
-
               * Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
-
               * Preserve the original variable names.
-
           2.  **Table Specification:**
-
               * If the image contains content resembling a "table", please output it using standard Markdown table syntax. For example:
-
                   | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
                   |---------------|---------|-------|----------|
                   | Copy Writing  | $50/hr  | 4     | $200.00  |
                   | Website Design| $50/hr  | 2     | $100.00  |
-
-
               * Separate the header row from the content rows using a separator line (e.g., |---|---|). Ensure each column's separator has at least three hyphens (-) for alignment.
-
               * Monetary amounts should include the currency symbol and decimal points (if present in the original).
-
               * If a table is recognized, do not ignore the text outside the table.
-
           3.  **Paragraph Requirements:**
-
               * Separate each paragraph with two newline characters to ensure correct paragraph rendering in Markdown.
-
           4.  **Text Recognition Requirements:**
-
               * Do not omit any text.
-
               * Try to maintain the original paragraph structure and general layout (like indentation, but prioritize standard Markdown formatting).
-
               * Accurately recognize professional terminology and specific nouns.
-
               * Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists; do not apply any Markdown list formatting that isn't explicitly indicated in the original text.
-
           5.  **Identifying and Marking Uncertainties:**
-
                 * Recognize all text in the image.
-
                 * For text or words that you are uncertain about recognizing or might have recognized incorrectly due to image blurriness, illegible handwriting, or other reasons, please mark them using **bold** formatting.
-
           6.  **Contextual Proofreading and Correction:**
-
               * After recognition is complete, please carefully review the text content.
-
               * Use contextual information to correct potential typos, spelling errors, or obvious grammatical mistakes in the recognition results.
-
               * Mark the words or phrases you have corrected using *italic* formatting to clearly show the modifications.
-
           7.  **Output Requirements:**
-
               * Directly output the processed content without adding any explanations, preambles, or summaries.
           `;
           const result = await model.generateContentStream([rulesPrompt, imagePart]);
