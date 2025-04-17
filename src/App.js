@@ -669,7 +669,7 @@ function App() {
         </a>
         <h1>GeminiOCR - 高精度OCR系统</h1>
         <p>
-            基于Gemini视觉API的智能文字识别解决方案，可精准识别多语言印刷体、手写体文字、表格等。
+            <b>基于Gemini视觉API的智能文字识别解决方案，可精准识别多语言印刷体、手写体文字、表格等。</b>
             <br />
             识别出的表格是 Markdown 格式，请到{' '}
             <a href="https://tableconvert.com/zh-cn/markdown-to-markdown" target="_blank" rel="noopener noreferrer">
