@@ -102,7 +102,7 @@ const COMMON_ERRORS = [
   [/(\S)(的地得)(\S)/g, (match, p1, p2, p3) => {
     const rules = { 的: 'adj', 地: 'adv', 得: 'verb' };
     const prevCharType = /[名形]/.test(p1) ? 'adj' : /[动]/.test(p1) ? 'verb' : 'adv';
-    return p1 + (Object.keys(rules).find(k => rules[k] === prevCharType) + p3;
+    return p1 + Object.keys(rules).find(k => rules[k] === prevCharType) + p3;
   }]
 ];
 
