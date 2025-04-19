@@ -62,10 +62,10 @@ const ADVANCED_PROMPT = `
     * 对数学公式、表格内容禁用标注
 
 6.  **智能纠错规范：**
-    * 三级纠错流程：
-        1) 单词语法检查（的/得/地等）
-        2) 上下文语义验证（分析前后3句）
-        3) 匹配专业术语库（${DOMAIN_LEXICONS.join('、')}）
+    * 单词语法检查（的/得/地等）
+    * 上下文语义验证（分析前后3句）
+    * 可用专业领域：${Object.keys(DOMAIN_LEXICONS).join('、')}
+    * 示例医学术语：${DOMAIN_LEXICONS.medical.slice(0,3).join('、')}
     * 所有修正必须用*斜体*标注
 
 7.  **输出要求：**
@@ -127,10 +127,9 @@ const COMMON_ERRORS = {
   '嘛烦': '麻烦', '需呀': '需要', '的的': '的'
 };
 
-async function semanticCorrection(text, domain = process.env.DEFAULT_DOMAIN || 'general') {
-  // 安全获取词库
-  const lexicon = DOMAIN_LEXICONS[domain] || DOMAIN_LEXICONS.general;
-  
+async function semanticCorrection(text, domain = 'medical') {
+  const terms = DOMAIN_LEXICONS[domain] || [];
+  console.log(`当前领域 ${domain} 的术语: ${terms.join(', ')}`);
   const words = segment.doSegment(text, { simple: true });
   return words.map((word, index) => {
     // 专业术语优先
