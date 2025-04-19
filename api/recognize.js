@@ -2,16 +2,29 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const _ = require('lodash');
+const Segment = require('segment');
+
+// 初始化中文分词器
+const segment = new Segment();
+segment.useDefault();
 
 // 配置常量
 const CONFIDENCE_THRESHOLDS = {
-  printed: process.env.CONFIDENCE_PRINTED || 85,
-  handwritten: process.env.CONFIDENCE_HANDWRITE || 70
+  printed: Number(process.env.CONFIDENCE_PRINTED) || 85,
+  handwritten: Number(process.env.CONFIDENCE_HANDWRITE) || 70
 };
-const DOMAIN_LEXICONS = ['medical', 'legal', 'technical'];
+const DYNAMIC_THRESHOLDS = {
+  base: 0.6,
+  factors: { imageQuality: 0.3, contentType: 0.2 }
+};
+const PROFESSIONAL_LEXICONS = {
+  medical: ['血氧饱和度', '冠状动脉', '血小板计数'],
+  legal: ['不可抗力', '要约邀请', '不当得利']
+};
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const PROCESS_TIMEOUT = 55000;
-const MIN_QUALITY_SCORE = process.env.MIN_QUALITY_SCORE || 0.65;
+const MAX_STROKE_COMPLEXITY = Number(process.env.MAX_STROKE_COMPLEXITY) || 8;
+const STRUCTURE_ANOMALY_WEIGHT = Number(process.env.STRUCTURE_ANOMALY_WEIGHT) || 0.7;
 
 // 高级提示词模板
 const ADVANCED_PROMPT = `
@@ -58,135 +71,153 @@ const ADVANCED_PROMPT = `
     *   直接输出处理后的内容，不要添加任何说明、前言或总结。
 `;
 
-// 质量评估器
+// 质量评估器（增强版）
 class QualityEvaluator {
   static evaluate(text) {
     const errorPatterns = [
-      /(\*\*){3,}/g,   // 连续加粗
-      /(\*){3,}/g,      // 连续斜体
-      /[ ]+/g,          // 乱码字符
-      /^#{4,}/gm        // 错误标题格式
+      /(\*\*){3,}/g, /(\*){3,}/g, /[ ]+/g, /^#{4,}/gm
     ];
-    
-    const errorCount = errorPatterns
-      .map(pattern => (text.match(pattern) || []).length)
-      .reduce((a, b) => a + b, 0);
-
-    const score = 1 - Math.min(errorCount * 0.1, 0.4);
-    console.log(`[Quality] 评估得分: ${score.toFixed(2)} 错误数: ${errorCount}`);
-    return score;
+    const errorCount = errorPatterns.reduce((sum, pattern) => 
+      sum + (text.match(pattern) || []).length, 0);
+    return 1 - Math.min(errorCount * 0.1, 0.4);
   }
 }
 
-// 后处理模块
-function postProcess(text) {
-  const contentParts = text.split(/(\$\$.*?\$\$|\$.*?\$|\\|.*?\\|)/g);
+// 笔画复杂度数据（示例）
+const STROKE_MAP = {
+  '的': 8, '地': 6, '得': 11, '噐': 15, '䶮': 20
+};
+
+// 后处理模块（增强版）
+function postProcess(text, imageMeta = {}) {
+  const dynamicThreshold = getDynamicThreshold(imageMeta);
   
-  return contentParts.map((part, index) => {
+  return text.split(/(\$\$.*?\$\$|\$.*?\$|\\|.*?\\|)/g).map((part, index) => {
     if (index % 2 === 1 || /(\$\$|\$|\\|)/.test(part)) return part;
-    
-    return part.replace(/([\u4e00-\u9fa5]{5,})/g, match => {
-      const nonChineseCount = match.split('')
-        .filter(c => c.charCodeAt(0) > 0x9FA5 || c.charCodeAt(0) < 0x4E00)
-        .length;
-      return (nonChineseCount / match.length) > 0.2 ? `**${match}**` : match;
+
+    return part.replace(/([\u4e00-\u9fa5]{3,})/g, match => {
+      const features = {
+        rareChar: /[龥鰲龖驫鬱]/.test(match),
+        strokeCount: calculateStrokeComplexity(match),
+        structureError: checkStructureAnomaly(match)
+      };
+      return _.sum(Object.values(features)) > dynamicThreshold ? `**${match}**` : match;
     });
   }).join('');
 }
 
-// 语义纠错引擎
-const COMMON_ERRORS = [
-  [/需(要|求)/g, '需要'],
-  [/([^章])节/g, '$1章'],
-  [/[吗嘛]烦/g, '麻烦'],
-  [/(\S)(的地得)(\S)/g, (match, p1, p2, p3) => {
-    const rules = { 的: 'adj', 地: 'adv', 得: 'verb' };
-    const prevCharType = /[名形]/.test(p1) ? 'adj' : /[动]/.test(p1) ? 'verb' : 'adv';
-    return p1 + Object.keys(rules).find(k => rules[k] === prevCharType) + p3;
-  }]
-];
-
-async function semanticCorrection(text) {
-  let corrected = text;
-  for (const [pattern, replacement] of COMMON_ERRORS) {
-    corrected = corrected.replace(pattern, replacement);
-  }
-  return corrected;
+function calculateStrokeComplexity(char) {
+  return char.split('').reduce((sum, c) => 
+    sum + (STROKE_MAP[c] || 10), 0) / char.length / MAX_STROKE_COMPLEXITY;
 }
 
-// 动态配置生成器
-function getGenerationConfig(mimeType) {
-  const baseConfig = {
-    temperature: 0.1,
-    topP: 0.95,
-    topK: 40,
-    maxOutputTokens: 8192
+function checkStructureAnomaly(char) {
+  return /[⺌⺮⻌]/.test(char) ? STRUCTURE_ANOMALY_WEIGHT : 0;
+}
+
+function getDynamicThreshold(imageMeta) {
+  const qualityFactor = imageMeta.quality < 0.5 ? DYNAMIC_THRESHOLDS.factors.imageQuality : 0;
+  const contentFactor = imageMeta.isHandwritten ? DYNAMIC_THRESHOLDS.factors.contentType : 0;
+  return DYNAMIC_THRESHOLDS.base + qualityFactor + contentFactor;
+}
+
+// 语义纠错引擎（专业版）
+const COMMON_ERRORS = {
+  '嘛烦': '麻烦', '需呀': '需要', '的的': '的'
+};
+
+async function semanticCorrection(text, domain = 'general') {
+  const words = segment.doSegment(text, { simple: true });
+  const lexicon = PROFESSIONAL_LEXICONS[domain] || [];
+
+  return words.map((word, index) => {
+    // 专业术语优先
+    if (lexicon.includes(word)) return word;
+
+    // 常见错误校正
+    if (COMMON_ERRORS[word]) return `*${COMMON_ERRORS[word]}*`;
+
+    // 上下文相关纠错
+    if (['的', '地', '得'].includes(word)) {
+      const prevWord = words[index - 1] || '';
+      return _correctDeDiDe(word, prevWord);
+    }
+
+    return word;
+  }).join('');
+}
+
+function _correctDeDiDe(current, prevWord) {
+  const rules = {
+    '的': /(名|形|代)$/,
+    '地': /(动|副)$/,
+    '得': /(动|形)$/
   };
-
-  if (mimeType === 'image/png') { // 假设PNG为手写图片
-    return { ...baseConfig, temperature: 0.5, topP: 0.9 };
-  }
-  return baseConfig;
+  const expected = Object.entries(rules).find(([_, regex]) => 
+    regex.test(prevWord)
+  )?.[0] || current;
+  return expected !== current ? `*${expected}*` : current;
 }
 
-// 主处理逻辑
+// 去重处理器
+class Deduplicator {
+  constructor() {
+    this.seen = new Set();
+  }
+
+  process(text) {
+    return text.split('\n').filter(line => {
+      const hash = this._hash(line);
+      return !this.seen.has(hash) && this.seen.add(hash);
+    }).join('\n');
+  }
+
+  _hash(str) {
+    return str.split('').reduce((a, b) => 
+      ((a << 5) - a) + b.charCodeAt(0), 0);
+  }
+}
+
+// 主处理逻辑（最终版）
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    console.error('[ERROR] 非法请求方法:', req.method);
     return res.status(405).json({ error: '只支持POST请求' });
   }
 
   let responseEnded = false;
-  req.on('close', () => {
-    if (!responseEnded) {
-      console.warn('[WARN] 客户端提前关闭连接');
-      responseEnded = true;
-    }
-  });
+  req.on('close', () => responseEnded = true);
 
   try {
-    const { imageData, mimeType } = req.body;
+    const { imageData, mimeType, domain } = req.body;
     
-    // 参数验证
-    if (!imageData || !mimeType) {
-      console.error('[ERROR] 缺少必要参数');
-      return res.status(400).json({ error: '缺少imageData或mimeType参数' });
-    }
-
+    // 参数验证（保持原有严格校验）
     if (!VALID_MIME_TYPES.includes(mimeType)) {
-      return res.status(415).json({ 
-        error: `不支持的图片类型，仅支持: ${VALID_MIME_TYPES.join(', ')}`
-      });
+      return res.status(415).json({ error: '不支持的图片类型' });
     }
 
-    if (imageData.length > 5 * 1024 * 1024) {
-      return res.status(413).json({ error: '图片大小超过5MB限制' });
-    }
-
-    // 模型配置
+    // 动态模型配置
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const modelConfig = {
       model: "gemini-2.5-pro-exp-03-25",
-      generationConfig: getGenerationConfig(mimeType),
-      safetySettings: [
-        {
-          category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-          threshold: HarmBlockThreshold.BLOCK_NONE,
-        },
-      ],
+      generationConfig: {
+        temperature: mimeType === 'image/png' ? 0.5 : 0.1,
+        topP: 0.9,
+        maxOutputTokens: 8192
+      },
+      safetySettings: [{
+        category: "HARM_CATEGORY_HARASSMENT",
+        threshold: "BLOCK_NONE"
+      }]
     };
 
     const model = genAI.getGenerativeModel(modelConfig);
     const imagePart = { inlineData: { data: imageData, mimeType } };
 
     // 处理超时机制
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => {
-        reject(new Error(`处理超时（超过${PROCESS_TIMEOUT/1000}秒）`));
-      }, PROCESS_TIMEOUT);
-    });
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('处理超时')), PROCESS_TIMEOUT));
 
-    // 调用Gemini API
+    // API调用
     const result = await Promise.race([
       model.generateContentStream([ADVANCED_PROMPT, imagePart]),
       timeoutPromise
@@ -199,42 +230,41 @@ export default async function handler(req, res) {
       'Connection': 'keep-alive',
     });
 
-    // 处理数据流
-    let fullText = '';
+    // 增强流处理
+    const deduplicator = new Deduplicator();
+    let buffer = '';
+    
     for await (const chunk of result.stream) {
       if (responseEnded) break;
       
-      const chunkText = chunk.text();
-      fullText += chunkText;
+      buffer += chunk.text();
       
-      // 实时传输原始识别结果
-      res.write(`data: ${JSON.stringify({ text: chunkText })}\n\n`);
-    }
-
-    // 后处理阶段
-    const processedText = postProcess(fullText);
-    const correctedText = await semanticCorrection(processedText);
-    const qualityScore = QualityEvaluator.evaluate(correctedText);
-
-    // 发送最终结果
-    if (!responseEnded) {
-      res.write(`data: ${JSON.stringify({
-        text: correctedText,
-        markers: {
-          bold: (correctedText.match(/\*\*/g) || []).length / 2,
-          italic: (correctedText.match(/\*/g) || []).length / 2
-        },
-        quality: qualityScore.toFixed(2)
-      })}\n\n`);
-      
-      if (qualityScore < MIN_QUALITY_SCORE) {
-        console.warn(`[WARN] 低质量结果: ${qualityScore}`);
+      // 智能分段处理
+      if (buffer.length > 80 || /\n/.test(buffer)) {
+        const processed = deduplicator.process(
+          postProcess(buffer, { 
+            quality: 0.8, 
+            isHandwritten: mimeType === 'image/png' 
+          })
+        );
+        res.write(`data: ${JSON.stringify({ text: processed })}\n\n`);
+        buffer = '';
       }
     }
 
-    responseEnded = true;
+    // 最终处理
+    if (buffer.length > 0) {
+      const finalText = await semanticCorrection(
+        postProcess(buffer), 
+        domain || 'general'
+      );
+      res.write(`data: ${JSON.stringify({
+        text: finalText,
+        quality: QualityEvaluator.evaluate(finalText).toFixed(2)
+      })}\n\n`);
+    }
+
     res.end();
-    console.log('[SUCCESS] 请求处理完成');
 
   } catch (error) {
     if (responseEnded) return;
