@@ -1,7 +1,7 @@
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import _ from 'lodash';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const _ = require('lodash');
 const Segment = require('segment');
 
 // 初始化中文分词器
@@ -17,9 +17,10 @@ const DYNAMIC_THRESHOLDS = {
   base: 0.6,
   factors: { imageQuality: 0.3, contentType: 0.2 }
 };
-const PROFESSIONAL_LEXICONS = {
+const DOMAIN_LEXICONS = {
   medical: ['血氧饱和度', '冠状动脉', '血小板计数'],
-  legal: ['不可抗力', '要约邀请', '不当得利']
+  legal: ['不可抗力', '要约邀请', '不当得利'],
+  general: []
 };
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const PROCESS_TIMEOUT = 55000;
@@ -126,10 +127,11 @@ const COMMON_ERRORS = {
   '嘛烦': '麻烦', '需呀': '需要', '的的': '的'
 };
 
-async function semanticCorrection(text, domain = 'general') {
+async function semanticCorrection(text, domain = process.env.DEFAULT_DOMAIN || 'general') {
+  // 安全获取词库
+  const lexicon = DOMAIN_LEXICONS[domain] || DOMAIN_LEXICONS.general;
+  
   const words = segment.doSegment(text, { simple: true });
-  const lexicon = PROFESSIONAL_LEXICONS[domain] || [];
-
   return words.map((word, index) => {
     // 专业术语优先
     if (lexicon.includes(word)) return word;
