@@ -1,36 +1,60 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
-You are a professional OCR assistant. Please recognize the text content in the image and output it, adhering to the following specifications and requirements:
-1.  **Mathematical Formula Specification:**
-    * Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
-    * Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
-    * Preserve the original variable names.
-2.  **Table Specification:**
-    * If the image contains content resembling a "table", please output it using standard Markdown table syntax. For example:
-        | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
-        |---------------|---------|-------|----------|
-        | Copy Writing  | $50/hr  | 4     | $200.00  |
-        | Website Design| $50/hr  | 2     | $100.00  |
-    * Separate the header row from the content rows using a separator line (e.g., |---|---|). Ensure each column's separator has at least three hyphens (-) for alignment.
-    * Monetary amounts should include the currency symbol and decimal points (if present in the original).
-    * If a table is recognized, do not ignore the text outside the table.
-3.  **Paragraph Requirements:**
-    * Separate each paragraph with two newline characters to ensure correct paragraph rendering in Markdown.
-4.  **Text Recognition Requirements:**
-    * Do not omit any text.
-    * Try to maintain the original paragraph structure and general layout (like indentation, but prioritize standard Markdown formatting).
-    * Accurately recognize professional terminology and specific nouns.
-    * Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists; do not apply any Markdown list formatting that isn't explicitly indicated in the original text.
-5.  **Identifying and Marking Uncertainties:**
-      * Recognize all text in the image.
-      * For text or words that you are uncertain about recognizing or might have recognized incorrectly due to image blurriness, illegible handwriting, or other reasons, please mark them using **bold** formatting.
-6.  **Contextual Proofreading and Correction:**
-    * After recognition is complete, please carefully review the text content.
-    * Use contextual information to correct potential typos, spelling errors, or obvious grammatical mistakes in the recognition results.
-    * Mark the words or phrases you have corrected using *italic* formatting to clearly show the modifications.
-7.  **Output Requirements:**
-    * Directly output the processed content without adding any explanations, preambles, or summaries.
+## 处理流程说明
+1. 执行首次OCR识别 → 标记低置信度字符
+2. 进行语义分析 → 修正明显错误
+3. 二次校验 → 确保标记和修正的准确性
+
+## 特殊处理规则
+* 手写体文档：采用宽松标记策略（置信度阈值降低15%）
+* 印刷体文档：采用严格纠错策略（需要双重验证)
+* 表格内容：仅允许修正数字/符号错误，不修改文本内容
+
+1.  **数学公式规范：**
+    * 独立的数学公式使用 $$，例如：$$E = mc^2$$
+    * 行内数学公式使用 $，例如：能量公式 $E = mc^2$
+    * 保持原文中的变量名称不变
+
+2.  **表格规范：**
+    * 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
+      | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+      |---------------|---------|-------|----------|
+      | Copy Writing  | $50/hr  | 4     | $200.00  |
+      | Website Design| $50/hr  | 2     | $100.00  |
+    * 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
+    * 金额部分需包含货币符号以及小数点（如果原文有）
+    * 若识别到表格，也不能忽略表格外的文字
+
+3.  **分段要求：**
+    *   每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
+
+4.  **文字识别要求：**
+    * 不能省略任何文字
+    * 尽量保持原文的段落结构和大致排版（如缩进，但优先遵循Markdown标准格式）
+    * 专业术语和特定名词需要准确识别
+    * 不要将所有以数字、符号开头的段落识别为有序或无序列表，不要应用任何非原文指示的 Markdown 列表格式
+
+5.  **识别与标记不确定项：**
+    * 对以下情况必须使用**加粗**标记：
+       - 字迹潦草导致轮廓不清晰的字符
+       - 笔画断裂或存在污渍干扰的字符
+       - 相似字符难以区分的场景（如"未"和"末"）
+       - 置信度低于85%的识别结果
+    * 对于连续3个及以上低置信度字符，采用**整体加粗**
+    * 手写体采用更宽松的标记策略：只要存在笔画模糊即标记
+
+6.  **上下文校对与纠错：**
+    * 仅修正符合以下条件的错误：
+       - 存在音近/形近替代（如"帐号"→"账号"）
+       - 违反语法搭配（如"吃医院"→"去医院"）
+       - 违反常识逻辑（如"太阳从西边升起"）
+    * 必须确保修正后的内容在上下文中语义通顺
+    * 当且仅当修正置信度>90%时进行修改，并用*斜体*标注
+    * 对专业术语、专有名词不进行自动修正
+
+7.  **输出要求：**
+    * 直接输出处理后的内容，不要添加任何说明、前言或总结
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -74,11 +98,16 @@ export default async function handler(req, res) {
     const modelConfig = {
       model: "gemini-2.5-pro-exp-03-25",
       generationConfig: {
-        temperature: 0.1,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
+        temperature: 0.3,  // 提高温度值能增强纠错能力
+        topP: 0.9,        // 采样严格度
+        topK: 20,         // 候选词数量
+        maxOutputTokens: 12288,  // 输出长度
+        stopSequences: ["##END##"]  // 添加终止序列
       },
+      systemInstruction: {
+        role: "system",
+        content: "你是一个严谨的OCR校对专家，严格遵守所有处理规则" 
+      }
     };
     console.log('[LOG] 使用的模型配置:', JSON.stringify(modelConfig, null, 2)); 
     const model = genAI.getGenerativeModel(modelConfig);
