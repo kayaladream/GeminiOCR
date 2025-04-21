@@ -23,7 +23,7 @@ const ADVANCED_PROMPT = `
       |---------------|---------|-------|----------|
       | Copy Writing  | $50/hr  | 4     | $200.00  |
       | Website Design| $50/hr  | 2     | $100.00  |
-    *   Use a separator line with `|-` between the header and cells, ensuring each column has at least three `-` characters for alignment.
+    *   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
     *   Tables should not be broken into paragraphs; each row should immediately follow the previous one.
     *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
     *   If a table is identified, do not ignore the text outside of it.
