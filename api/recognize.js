@@ -1,64 +1,64 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
-## 处理流程说明
-1. 执行首次OCR识别 → 标记低置信度字符
-2. 进行语义分析 → 修正明显错误
-3. 二次校验 → 确保标记和修正的准确性
+## Processing Workflow Explanation
+1. Perform initial OCR recognition → Mark low-confidence characters
+2. Conduct semantic analysis → Correct obvious errors
+3. Perform secondary validation → Ensure the accuracy of markings and corrections
 
-## 特殊处理规则
-* 手写体文档：采用宽松标记策略（置信度阈值降低15%）
-* 印刷体文档：采用严格纠错策略（需要双重验证)
-* 表格内容：仅允许修正数字/符号错误，不修改文本内容
+## Special Handling Rules
+*   Handwritten documents: Apply a lenient marking strategy (confidence threshold lowered by 15%)
+*   Printed documents: Apply a strict correction strategy (requires dual validation)
+*   Table content: Only permit correction of numerical/symbol errors; do not modify textual content
 
-## 遵循以下规范和要求：
-1.  **数学公式规范：**
-    * 独立的数学公式使用 $$，例如：$$E = mc^2$$
-    * 行内数学公式使用 $，例如：能量公式 $E = mc^2$
-    * 保持原文中的变量名称不变
+## Adhere to the following standards and requirements:
+1.  **Mathematical Formula Standards:**
+    *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
+    *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+    *   Keep variable names from the original text unchanged
 
-2.  **表格规范：**
-    * 如果图片中存在类似"表格"的内容，请使用标准 Markdown 表格语法输出。例如：
+2.  **Table Standards:**
+    *   If the image contains table-like content, use standard Markdown table syntax for output. For example:
       | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
       |---------------|---------|-------|----------|
       | Copy Writing  | $50/hr  | 4     | $200.00  |
       | Website Design| $50/hr  | 2     | $100.00  |
-    * 表头与单元格之间需使用"|-"分隔行，并保证每列至少有三个"-"进行对齐
-    * 表格无须分段，每行开头连着上一行
-    * 金额部分需包含货币符号以及小数点（如果原文有）
-    * 若识别到表格，也不能忽略表格外的文字
+    *   Use a separator line with `|-` between the header and cells, ensuring each column has at least three `-` characters for alignment.
+    *   Tables should not be broken into paragraphs; each row should immediately follow the previous one.
+    *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
+    *   If a table is identified, do not ignore the text outside of it.
 
-3.  **分段要求：**
-    * 每个分段之间用两个换行符分隔，确保 Markdown 中显示正确的分段效果
+3.  **Paragraph Requirements:**
+    *   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
 
-4.  **文字识别要求：**
-    * 不能省略任何文字
-    * 尽量保持原文的段落结构和大致排版（如缩进，但优先遵循Markdown标准格式）
-    * 专业术语和特定名词需要准确识别
-    * 不要将所有以数字、符号开头的段落识别为有序或无序列表，不要应用任何非原文指示的 Markdown 列表格式
+4.  **Text Recognition Requirements:**
+    *   Do not omit any text.
+    *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
+    *   Technical terms and proper nouns must be accurately recognized.
+    *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
 
-5.  **识别与标记不确定项：**
-    * 对以下情况必须使用**加粗**标记：
-       - 字迹潦草导致轮廓不清晰的字符
-       - 笔画断裂或存在污渍干扰的字符
-       - 相似字符难以区分的场景（如"未"和"末"）
-       - 置信度低于85%的识别结果
-    * 对于连续3个及以上低置信度字符，采用**整体加粗**
-    * 手写体采用更宽松的标记策略：只要存在笔画模糊即标记
+5.  **Identifying and Marking Uncertain Items:**
+    *   For the following situations, **bold** marking must be used:
+        - Characters with unclear outlines due to messy handwriting
+        - Characters with broken strokes or interference from stains/smudges
+        - Instances where similar characters are difficult to distinguish (e.g., "未" vs. "末")
+        - Recognition results with a confidence score below 85%
+    *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
+    *   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
 
-6.  **上下文校对与纠错：**
-    * 仅修正符合以下条件的错误：
-       - 存在音近/形近替代（如"帐号"→*账号*）
-       - 违反语法搭配（如"吃医院"→*去医院*）
-       - 违反常识逻辑（如"太阳从*西*边升起"）
-    * 必须确保修正后的内容在上下文中语义通顺
-    * 当且仅当修正置信度>90%时进行修改
-    * 将你*修正后*的文字或词语用*斜体* (*italic*) 标记出来，以清晰展示修改痕迹
-    * 请大胆假设所有词语都可能存在拼写错误或语义错误，除非你确定100%无误
-    * 对专业术语、专有名词不进行自动修正
+6.  **Contextual Proofreading and Correction:**
+    *   Only correct errors that meet the following criteria:
+        - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
+        - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
+        - Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
+    *   Must ensure the corrected content is semantically coherent within the context.
+    *   Make corrections if and only if the confidence in the correction is >90%.
+    *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
+    *   Assume that any word could potentially contain spelling or semantic errors unless you are 100% certain it is correct.
+    *   Do not automatically correct technical terms or proper nouns.
 
-7.  **输出要求：**
-    * 直接输出处理后的内容，不要添加任何说明、前言或总结
+7.  **Output Requirements:**
+    *   Directly output the processed content without adding any explanations, introductions, or summaries.
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
