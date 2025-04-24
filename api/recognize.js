@@ -104,7 +104,7 @@ export default async function handler(req, res) {
       generationConfig: {
         temperature: 0.3,  // 提高温度值能增强纠错能力
         topP: 0.9,        // 采样严格度
-        topK: 5,         // 候选词数量
+        topK: 10,         // 候选词数量
         maxOutputTokens: 12288,  // 输出长度
         stopSequences: ["##END##"]  // 添加终止序列
       },
