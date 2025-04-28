@@ -25,7 +25,7 @@
 本项目采用Vercel平台进行云端部署，部署前需配置以下环境变量：
 `GEMINI_API_KEY`
 
-[![Vercel部署按钮](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkayaladream%2FGeminiOCR&env=GEMINI_API_KEY&envDescription=您的Google%20Gemini%20API密钥&project-name=GeminiOCR&repository-name=GeminiOCR)
+[![Vercel部署按钮](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkayaladream%2FGeminiOCR&env=GEMINI_API_KEY&envDescription=您的Google%20Gemini%20API密钥&project-name=gemini-ocr&repository-name=GeminiOCR)
 
 **注意：将Vercel的“函数最大持续时间”从默认的10秒调整为60秒，以确保Gemini API有足够的处理时间，避免因超时而中断请求。**
 
