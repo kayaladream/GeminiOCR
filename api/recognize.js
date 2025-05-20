@@ -100,7 +100,7 @@ export default async function handler(req, res) {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const modelConfig = {
-      model: "gemini-2.5-pro-exp-03-25",
+      model: "gemini-2.5-pro-preview-05-06",
       generationConfig: {
         temperature: 0.3,  // 提高温度值能增强纠错能力
         topP: 0.9,        // 采样严格度
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
       },
       systemInstruction: {
         role: "system",
-        content: "你是一个严谨的OCR校对专家，严格遵守所有处理规则" 
+        content: "You are a meticulous OCR proofreading expert, strictly adhering to all processing rules." 
       }
     };
     console.log('[LOG] 使用的模型配置:', JSON.stringify(modelConfig, null, 2)); 
