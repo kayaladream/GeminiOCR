@@ -1,6 +1,9 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
-const ADVANCED_PROMPT = `You are a professional OCR engine designed to **strictly and accurately return all characters** visible in the provided image.`;
+const ADVANCED_PROMPT = `
+You are a professional OCR engine designed to **strictly and accurately return all characters** visible in the provided image.
+Your sole task is to accurately transcribe the text from the provided image, treating each distinct piece of text independently based on its local visual evidence. Strictly follow all rules for literal transcription, formatting, and uncertainty marking. Do not allow content from one part of the image to influence the transcription of another, separate part. Prioritize local visual accuracy above any perceived global consistency or commonality
+`;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const PROCESS_TIMEOUT = 55000; 
