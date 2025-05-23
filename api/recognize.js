@@ -1,129 +1,90 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
-## Core Processing Principles
-1. **Absolute Context Independence**
-   * Each text element must be processed based solely on its visual evidence
-   * Strictly prohibit cross-referencing between:
-     - Different document sections
-     - Adjacent table cells
-     - Header/footer content
-     - Edge artifacts
-   * Example enforcement: 
-     ✓ "豪享版" and "豪华版" must both be preserved exactly as visually present
-     ✓ "WiFi" vs "Wifi" variants maintain original forms
-
-2. **Visual Fidelity Hierarchy**
-   Processing priority:
-   1. Pixel-level character features (stroke morphology/smudging)
-   2. Immediate 3-character visual context
-   3. Semantic plausibility (ONLY for sub-70% confidence characters)
-
-## Enhanced Processing Workflow
-1. Initial OCR Pass
-   * Literal transcription with confidence tagging
-   * Isolation protocol: Each character's confidence calculated from 5x5 pixel neighborhood
-
-2. Context-Free Validation
-   * Error correction ONLY when:
-     - Single-character OCR artifacts detected (l→1, O→0)
-     - Confidence <70% AND visual ambiguity confirmed
-   * Correction marking: *italics* for modified characters
-
-3. Variant Preservation Check
-   * Automated logging of all term variants
-   * Anti-normalization protection for:
-     - Terminology inconsistencies
-     - Format variations
-     - Case alternations
-
-## Special Handling Rules (Enhanced)
-*   **Handwritten Documents**
-    - Confidence threshold: 70%
-    - Bold marking for:
-      • Unclear character outlines
-      • Broken strokes
-      • Visually similar pairs (未/末)
-    - No semantic corrections permitted
-
-*   **Printed Documents**
-    - Dual-validation required for ANY correction
-    - Strict prohibitions:
-      1. Term unification
-      2. Format standardization 
-      3. Synonym substitution
-    - No bold marking allowed (clean output only)
-
-*   **Table Content**
-    - Numerical/symbol correction ONLY
-    - Text cells: Absolute verbatim policy
-    - Variant protection example:
-      ✓ Preserve mixed "ID"/"Id" in same column
-
-## Standards & Requirements (Integrated)
-1. **Mathematical Formulas**
-   * Standalone: $$E=mc^2$$
-   * Inline: $E=mc^2$ 
-   * Variable preservation: Original forms maintained
-
-2. **Table Standards**
-   | 项目       | 单价      | 数量 | 小计      |
-   |------------|-----------|------|-----------|
-   | 文案撰写   | ¥500/小时 | 4    | ¥2000.00  |
-   * Currency symbols: Strictly as original
-   * No text normalization in cells
-
-3. **Text Requirements**
-   * Paragraph separation: Double newline
-   * Layout preservation:
-     - Original indentation
-     - Line breaks
-     - Spacing anomalies
-   * Prohibited actions:
-     1. Automatic list formatting
-     2. Markdown inference
-     3. Whitespace normalization
-
-4. **Correction Protocol**
-   * Allowed ONLY when:
-     - Phonetic/visual errors (帐号→*账号*)
-     - Grammatical violations (吃医院→*去医院*)
-     - Logical contradictions (sun rises in *west*)
-   * Threshold: >90% correction confidence
-   * Brand/technical terms: NEVER corrected
-
-5. **Output Specifications**
-   * Raw text + formatting only
-   * No explanatory content
-   * Machine-readable format
-   * Variant audit trail embedded
-
-### Key Integration Points:
-1. **Workflow Restructuring**
-   - Added isolation protocol in initial OCR pass
-   - Introduced variant preservation checkpoint
-   - Embedded anti-normalization checks
-
-2. **Enhanced Correction Logic**
-   - Added pixel-neighborhood confidence calculation
-   - Strictly limited correction triggers
-   - Clearer marking protocol (*italics* only)
-
-3. **Context Independence**
-   - Built into all processing stages
-   - Added real-world examples
-   - Machine-enforceable rules
-
-4. **Backward Compatibility**
-   - Maintained all original standards
-   - Preserved your marking system
-   - Kept existing table/math formats
-
-The integrated version maintains your original requirements while adding:
-- Stronger protection against contextual interference
-- More robust variant preservation
-- Clearer correction boundaries
-- Better machine-enforceable rules
+## Processing Workflow Explanation
+1. Perform initial OCR recognition → Mark low-confidence characters
+2. Conduct semantic analysis → Correct obvious errors
+3. Perform secondary validation → Ensure the accuracy of markings and corrections
+﻿
+## Core Processing Principles  
+1. **Location Isolation Principle**  
+* Each text element must be processed independently based on visual evidence from its specific location  
+* Prohibit cross-region referencing, including but not limited to:  
+- Other paragraphs in the same document  
+- Adjacent table cells  
+- Header/footer content  
+- Residual text at image edges  
+﻿
+2. **Variant Preservation Protocol**  
+* Mandatory retention of all textual variants:  
+- Term variations across locations (e.g., "豪享版" vs "豪华版")  
+- Case inconsistencies (e.g., "iPhone" vs "IPHONE")  
+- Format variants (e.g., "图1-1" vs "图1.1")  
+- Spelling variants (e.g., "登录/login" vs "登陆/landing")  
+* Implementation examples:  
+✓ Preserve both "甲方/Party A" and "甲方：/Party A:" in contracts  
+✓ Maintain alternating "WiFi" and "Wifi" in technical documents  
+✓ Retain mixed "ID" and "Id" usage within the same table  
+﻿
+3. **Visual Priority Hierarchy**  
+Processing priorities (highest to lowest):  
+1. Character-level pixel features (stroke morphology/degradation)  
+2. Local context (visual relationships within adjacent 3 characters)  
+3. Grammatical/semantic plausibility (ONLY for final judgment of characters with confidence <20%)  
+﻿
+4. **Anti-Correction Mechanism**  
+* Strictly prohibited correction types:  
+- Term unification (e.g., changing scattered "用户ID/User ID" to "用户Id/User Id")  
+- Format standardization (e.g., converting "2023年1月1日/Jan 1, 2023" to "2023-01-01")  
+- Synonym substitution (e.g., replacing "移动应用/mobile application" with "手机APP/smartphone app")  
+- Abbreviation expansion (e.g., expanding "北大/Beida" to "北京大学/Peking University")  
+﻿
+## Adhere to the following standards and requirements:
+1.  **Mathematical Formula Standards:**
+*   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
+*   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+*   Keep variable names from the original text unchanged
+﻿
+2.  **Table Standards:**
+*   If the image contains table-like content, use standard Markdown table syntax for output. For example:
+| DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+|---------------|---------|-------|----------|
+| Copy Writing  | $50/hr  | 4     | $200.00  |
+| Website Design| $50/hr  | 2     | $100.00  |
+*   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
+*   Monetary amounts must include currency symbols and decimal points (if present in the original text).
+*   If a table is identified, do not ignore the text outside of it.
+﻿
+3.  **Paragraph Requirements:**
+*   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
+﻿
+4.  **Text Recognition Requirements:**
+*   Do not omit any text.
+*   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
+*   Technical terms and proper nouns must be accurately recognized.
+*   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
+﻿
+5.  **Identifying and Marking Uncertain Items:**
+*   For the following situations, **bold** marking must be used:
+- Characters with unclear outlines due to messy handwriting
+- Characters with broken strokes or interference from stains/smudges
+- Instances where similar characters are difficult to distinguish (e.g., "未" vs. "末")
+- Recognition results with a confidence score below 85%
+*   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
+*   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
+﻿
+6.  **Contextual Proofreading and Correction:**
+*   Only correct errors that meet the following criteria:
+- Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
+- Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
+- Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
+*   Technical terms, brand names, model names, and proper nouns must be transcribed **EXACTLY** as they appear in their specific location. **Do not "correct" them to more common forms, even if similar but more common forms appear elsewhere in the SAME image.**
+*   Must ensure the corrected content is semantically coherent within the context.
+*   Make corrections if and only if the confidence in the correction is >90%.
+*   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
+﻿
+7.  **Output Requirements:**
+*   Directly output the processed content without adding any explanations, introductions, or summaries.
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
