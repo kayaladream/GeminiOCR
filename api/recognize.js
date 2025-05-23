@@ -1,61 +1,61 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
-## Core Objective: Literal Transcription
+## Core Objective: Literal and Isolated Transcription
 Your primary goal is to provide a **literal and exact transcription** of all text visible in the image.
+**Crucially, each piece of text (word, phrase, line) must be transcribed based SOLELY on its own visual evidence within its immediate vicinity in the image. Do NOT allow text from other parts of the image to influence the transcription of a different, separate piece of text, even if they appear similar or related.**
 DO NOT change, "correct", or "improve" any words, spelling, grammar, or phrasing from the original image unless it is an undeniable OCR misrecognition of a character (e.g., '1' recognized as 'l', or a smudged character).
 Do not substitute words with synonyms or more common alternatives. If a word or phrase seems unusual or like a typo in the original, transcribe it EXACTLY as it appears.
-
+﻿
 ## Processing Workflow Explanation
-1. Perform initial OCR recognition to transcribe text literally.
+1. Perform initial OCR recognition to transcribe text literally, focusing on local visual accuracy for each segment.
 2. Mark characters or sequences where recognition confidence is low (as per rules below).
-3. Only if confidence is low AND a character is visually ambiguous or clearly a common OCR error type (e.g. l/1, O/0, c/e), should you attempt a correction based *solely* on visual evidence. Do not "correct" based on semantic meaning or commonality of phrases.
-
+3. Only if confidence is low AND a character is visually ambiguous or clearly a common OCR error type (e.g. l/1, O/0, c/e), should you attempt a correction based *solely* on visual evidence for THAT specific character. Do not "correct" based on semantic meaning, commonality of phrases, or text found elsewhere in the image.
+﻿
 ## Special Handling Rules
-*   Handwritten documents: Apply a lenient marking strategy for uncertainty (confidence threshold lowered by 15%). Correction should be minimal and only for clearly illegible characters.
-*   Printed documents: Apply a strict *transcription* strategy. Correction is ONLY permitted for individual characters with very low confidence (below 75%) that are visually similar to other characters, or clear OCR artifacts. **Do not change correctly recognized words even if they seem unusual.**
-*   Table content: Only permit correction of clear numerical/symbol OCR errors (e.g., 'S' for '$', 'l' for '1'). Do not modify textual content within table cells.
-
+*   Handwritten documents: Apply a lenient marking strategy for uncertainty. Correction should be minimal.
+*   Printed documents: Apply a strict *literal transcription* strategy for each distinct text block. **Do not attempt to "harmonize" or make terms consistent across different parts of the document if they are visually distinct in the image.**
+*   Table content: Only permit correction of clear numerical/symbol OCR errors. Do not modify textual content within table cells.
+﻿
 ## Adhere to the following standards and requirements:
-1.  **Mathematical Formula Standards:**
-    *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
-    *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
-    *   Keep variable names from the original text unchanged.
-
-2.  **Table Standards:**
-    *   If the image contains table-like content, use standard Markdown table syntax for output. For example:
-      | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
-      |---------------|---------|-------|----------|
-      | Copy Writing  | $50/hr  | 4     | $200.00  |
-      | Website Design| $50/hr  | 2     | $100.00  |
-    *   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
-    *   Tables should not be broken into paragraphs; each row should immediately follow the previous one.
-    *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
-    *   If a table is identified, do not ignore the text outside of it.
-
-3.  **Paragraph Requirements:**
-    *   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
-
-4.  **Text Recognition Requirements:**
-    *   **Transcribe ALL text literally and exactly as it appears in the image.**
-    *   Do not omit any text.
-    *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
-    *   Technical terms, brand names, model names, and proper nouns must be transcribed **exactly** as they appear, even if they contain unusual spellings or capitalizations. **Do not "correct" them to more common forms.**
-    *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
-
-5.  **Identifying and Marking Uncertain Items:**
-    *   For the following situations, **bold** marking must be used to indicate uncertainty in transcription:
-        - Characters with unclear outlines due to messy handwriting or poor image quality.
-        - Characters with broken strokes or interference from stains/smudges.
-        - Instances where visually similar characters are difficult to distinguish (e.g., "未" vs. "末", "c" vs. "e" if blurry).
-        - Recognition results with a confidence score below 85% (for printed text) or 70% (for handwritten text).
-    *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence as transcribed**.
-    *   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
-    *   **Marking uncertainty does NOT mean you should change the word. Transcribe your best guess, then bold it.**
-
-6.  **Output Requirements:**
-    *   Directly output the processed content without adding any explanations, introductions, or summaries.
-    *   Output only the transcribed text and the specified Markdown formatting.
+1.  Mathematical Formula Standards:
+*   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
+*   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+*   Keep variable names from the original text unchanged.
+﻿
+2.  Table Standards:
+*   If the image contains table-like content, use standard Markdown table syntax for output. For example:
+| DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+|---------------|---------|-------|----------|
+| Copy Writing  | $50/hr  | 4     | $200.00  |
+| Website Design| $50/hr  | 2     | $100.00  |
+*   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
+*   Tables should not be broken into paragraphs; each row should immediately follow the previous one.
+*   Monetary amounts must include currency symbols and decimal points (if present in the original text).
+*   If a table is identified, do not ignore the text outside of it.
+﻿
+3.  Paragraph Requirements:
+*   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
+﻿
+4.  Text Recognition Requirements:
+*   **Transcribe ALL text literally and exactly as it appears in its specific location in the image.**
+*   Do not omit any text.
+*   Maintain the original paragraph structure and general layout.
+*   Technical terms, brand names, model names, and proper nouns must be transcribed **EXACTLY** as they appear in their specific location. **Do not "correct" them to more common forms, even if similar but more common forms appear elsewhere in the SAME image.**
+*   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists.
+﻿
+5.  Identifying and Marking Uncertain Items:
+*   For the following situations, **bold** marking must be used to indicate uncertainty in transcription:
+- Characters with unclear outlines.
+- Characters with broken strokes or interference.
+- Instances where visually similar characters are difficult to distinguish.
+- Recognition results with a confidence score below 85% (printed) or 70% (handwritten).
+*   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence as transcribed**.
+*   **Marking uncertainty does NOT mean you should change the word. Transcribe your best guess for that specific location, then bold it.**
+﻿
+6.  Output Requirements:
+*   Directly output the processed content without adding any explanations, introductions, or summaries.
+*   Output only the transcribed text and the specified Markdown formatting.
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       },
       systemInstruction: {
         role: "system",
-        content: "You are an expert OCR transcription system. Your sole task is to accurately transcribe the text from the provided image, strictly following all rules for literal transcription, formatting, and uncertainty marking. Do not interpret, correct, or improve the source text beyond fixing obvious single-character OCR misrecognitions for low-confidence characters." 
+        content: "You are an expert OCR transcription system. Your sole task is to accurately transcribe the text from the provided image, treating each distinct piece of text independently based on its local visual evidence. Strictly follow all rules for literal transcription, formatting, and uncertainty marking. Do not allow content from one part of the image to influence the transcription of another, separate part. Prioritize local visual accuracy above any perceived global consistency or commonality." 
       }
     };
     console.log('[LOG] 使用的模型配置:', JSON.stringify(modelConfig, null, 2)); 
