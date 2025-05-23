@@ -9,8 +9,8 @@ Do not substitute words with synonyms or more common alternatives. If a word or 
 ﻿
 ## Processing Workflow Explanation
 1. Perform initial OCR recognition to transcribe text literally, focusing on local visual accuracy for each segment.
-2. Mark characters or sequences where recognition confidence is low (as per rules below).
-3. Only if confidence is low AND a character is visually ambiguous or clearly a common OCR error type (e.g. l/1, O/0, c/e), should you attempt a correction based *solely* on visual evidence for THAT specific character. Do not "correct" based on semantic meaning, commonality of phrases, or text found elsewhere in the image.
+2. For handwritten text, mark characters or sequences where recognition confidence is low (as per rules below). For printed text, do not mark for uncertainty.
+3. Only if confidence is low (for handwritten text) AND a character is visually ambiguous or clearly a common OCR error type (e.g. l/1, O/0, c/e), should you attempt a correction based *solely* on visual evidence for THAT specific character. Do not "correct" based on semantic meaning, commonality of phrases, or text found elsewhere in the image.
 ﻿
 ## Adhere to the following standards and requirements:
 1.  Mathematical Formula Standards:
@@ -40,13 +40,14 @@ Do not substitute words with synonyms or more common alternatives. If a word or 
 *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists.
 ﻿
 5.  Identifying and Marking Uncertain Items:
-*   For the following situations, **bold** marking must be used to indicate uncertainty in transcription:
-- Characters with unclear outlines.
-- Characters with broken strokes or interference.
-- Instances where visually similar characters are difficult to distinguish.
-- Recognition results with a confidence score below 85% (printed) or 70% (handwritten).
-*   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence as transcribed**.
-*   **Marking uncertainty does NOT mean you should change the word. Transcribe your best guess for that specific location, then bold it.**
+*   **For PRINTED text: DO NOT use any bold marking.** Transcribe all printed text directly without applying bold formatting, regardless of recognition confidence or visual clarity. Your goal for printed text is a clean, unbolded transcription.
+*   **For HANDWRITTEN text ONLY:** If any of the following situations occur, **bold** marking must be used to indicate uncertainty in transcription:
+- Characters with unclear outlines due to messy handwriting.
+- Characters with broken strokes or interference from stains/smudges.
+- Instances where visually similar characters are difficult to distinguish (e.g., "未" vs. "末" in handwriting).
+- Recognition results with a confidence score below 70%.
+*   **For HANDWRITTEN text ONLY:** For sequences of 3 or more consecutive low-confidence characters that meet the above criteria, **bold the entire sequence as transcribed**.
+*   **Crucially, even for handwritten text where bolding is applied, marking uncertainty does NOT mean you should change the word. Transcribe your best guess for that specific location, then bold it.**
 ﻿
 6.  Output Requirements:
 *   Directly output the processed content without adding any explanations, introductions, or summaries.
@@ -94,7 +95,7 @@ export default async function handler(req, res) {
     const modelConfig = {
       model: "gemini-2.5-flash-preview-05-20",
       generationConfig: {
-        temperature: 0.1,  // 提高温度值能增强纠错能力
+        temperature: 0.3,  // 提高温度值能增强纠错能力
         topP: 0.9,        // 采样严格度
         topK: 10,         // 候选词数量
         maxOutputTokens: 12288,  // 输出长度
