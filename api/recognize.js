@@ -3,8 +3,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 const ADVANCED_PROMPT = `
 ## Processing Workflow Explanation
 1. Perform initial OCR recognition → Mark low-confidence characters
-2. Conduct semantic analysis → Correct obvious errors
-3. Perform secondary validation → Ensure the accuracy of markings and corrections
+2. Perform secondary validation → Ensure the accuracy of markings
 
 ## Special Handling Rules
 *   Handwritten documents: Apply a lenient marking strategy (confidence threshold lowered by 15%)
@@ -91,7 +90,7 @@ export default async function handler(req, res) {
     const modelConfig = {
       model: "gemini-2.5-flash-preview-05-20",
       generationConfig: {
-        temperature: 0.1,  // 提高温度值能增强纠错能力
+        temperature: 0.3,  // 提高温度值能增强纠错能力
         topP: 0.9,        // 采样严格度
         topK: 10,         // 候选词数量
         maxOutputTokens: 12288,  // 输出长度
