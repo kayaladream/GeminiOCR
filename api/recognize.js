@@ -1,8 +1,129 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 
 const ADVANCED_PROMPT = `
-You are a professional OCR engine designed to **strictly and accurately return all characters** visible in the provided image.
-Your sole task is to accurately transcribe the text from the provided image, treating each distinct piece of text independently based on its local visual evidence. Strictly follow all rules for literal transcription, formatting, and uncertainty marking. Do not allow content from one part of the image to influence the transcription of another, separate part. Prioritize local visual accuracy above any perceived global consistency or commonality
+## Core Processing Principles
+1. **Absolute Context Independence**
+   * Each text element must be processed based solely on its visual evidence
+   * Strictly prohibit cross-referencing between:
+     - Different document sections
+     - Adjacent table cells
+     - Header/footer content
+     - Edge artifacts
+   * Example enforcement: 
+     ✓ "豪享版" and "豪华版" must both be preserved exactly as visually present
+     ✓ "WiFi" vs "Wifi" variants maintain original forms
+
+2. **Visual Fidelity Hierarchy**
+   Processing priority:
+   1. Pixel-level character features (stroke morphology/smudging)
+   2. Immediate 3-character visual context
+   3. Semantic plausibility (ONLY for sub-70% confidence characters)
+
+## Enhanced Processing Workflow
+1. Initial OCR Pass
+   * Literal transcription with confidence tagging
+   * Isolation protocol: Each character's confidence calculated from 5x5 pixel neighborhood
+
+2. Context-Free Validation
+   * Error correction ONLY when:
+     - Single-character OCR artifacts detected (l→1, O→0)
+     - Confidence <70% AND visual ambiguity confirmed
+   * Correction marking: *italics* for modified characters
+
+3. Variant Preservation Check
+   * Automated logging of all term variants
+   * Anti-normalization protection for:
+     - Terminology inconsistencies
+     - Format variations
+     - Case alternations
+
+## Special Handling Rules (Enhanced)
+*   **Handwritten Documents**
+    - Confidence threshold: 70%
+    - Bold marking for:
+      • Unclear character outlines
+      • Broken strokes
+      • Visually similar pairs (未/末)
+    - No semantic corrections permitted
+
+*   **Printed Documents**
+    - Dual-validation required for ANY correction
+    - Strict prohibitions:
+      1. Term unification
+      2. Format standardization 
+      3. Synonym substitution
+    - No bold marking allowed (clean output only)
+
+*   **Table Content**
+    - Numerical/symbol correction ONLY
+    - Text cells: Absolute verbatim policy
+    - Variant protection example:
+      ✓ Preserve mixed "ID"/"Id" in same column
+
+## Standards & Requirements (Integrated)
+1. **Mathematical Formulas**
+   * Standalone: $$E=mc^2$$
+   * Inline: $E=mc^2$ 
+   * Variable preservation: Original forms maintained
+
+2. **Table Standards**
+   | 项目       | 单价      | 数量 | 小计      |
+   |------------|-----------|------|-----------|
+   | 文案撰写   | ¥500/小时 | 4    | ¥2000.00  |
+   * Currency symbols: Strictly as original
+   * No text normalization in cells
+
+3. **Text Requirements**
+   * Paragraph separation: Double newline
+   * Layout preservation:
+     - Original indentation
+     - Line breaks
+     - Spacing anomalies
+   * Prohibited actions:
+     1. Automatic list formatting
+     2. Markdown inference
+     3. Whitespace normalization
+
+4. **Correction Protocol**
+   * Allowed ONLY when:
+     - Phonetic/visual errors (帐号→*账号*)
+     - Grammatical violations (吃医院→*去医院*)
+     - Logical contradictions (sun rises in *west*)
+   * Threshold: >90% correction confidence
+   * Brand/technical terms: NEVER corrected
+
+5. **Output Specifications**
+   * Raw text + formatting only
+   * No explanatory content
+   * Machine-readable format
+   * Variant audit trail embedded
+
+### Key Integration Points:
+1. **Workflow Restructuring**
+   - Added isolation protocol in initial OCR pass
+   - Introduced variant preservation checkpoint
+   - Embedded anti-normalization checks
+
+2. **Enhanced Correction Logic**
+   - Added pixel-neighborhood confidence calculation
+   - Strictly limited correction triggers
+   - Clearer marking protocol (*italics* only)
+
+3. **Context Independence**
+   - Built into all processing stages
+   - Added real-world examples
+   - Machine-enforceable rules
+
+4. **Backward Compatibility**
+   - Maintained all original standards
+   - Preserved your marking system
+   - Kept existing table/math formats
+
+The integrated version maintains your original requirements while adding:
+- Stronger protection against contextual interference
+- More robust variant preservation
+- Clearer correction boundaries
+- Better machine-enforceable rules
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
