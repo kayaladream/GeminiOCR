@@ -12,11 +12,6 @@ Do not substitute words with synonyms or more common alternatives. If a word or 
 2. Mark characters or sequences where recognition confidence is low (as per rules below).
 3. Only if confidence is low AND a character is visually ambiguous or clearly a common OCR error type (e.g. l/1, O/0, c/e), should you attempt a correction based *solely* on visual evidence for THAT specific character. Do not "correct" based on semantic meaning, commonality of phrases, or text found elsewhere in the image.
 ﻿
-## Special Handling Rules
-*   Handwritten documents: Apply a lenient marking strategy for uncertainty. Correction should be minimal.
-*   Printed documents: Apply a strict *literal transcription* strategy for each distinct text block. **Do not attempt to "harmonize" or make terms consistent across different parts of the document if they are visually distinct in the image.**
-*   Table content: Only permit correction of clear numerical/symbol OCR errors. Do not modify textual content within table cells.
-﻿
 ## Adhere to the following standards and requirements:
 1.  Mathematical Formula Standards:
 *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
