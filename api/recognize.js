@@ -46,17 +46,7 @@ const ADVANCED_PROMPT = `
     *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
     *   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
 
-6.  **Contextual Proofreading and Correction:**
-    *   Do not automatically correct technical terms or proper nouns.
-    *   Only correct errors that meet the following criteria:
-        - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
-        - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
-        - Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
-    *   Must ensure the corrected content is semantically coherent within the context.
-    *   Make corrections if and only if the confidence in the correction is >90%.
-    *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
-
-7.  **Output Requirements:**
+6.  **Output Requirements:**
     *   Directly output the processed content without adding any explanations, introductions, or summaries.
 `;
 
