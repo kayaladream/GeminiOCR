@@ -7,84 +7,78 @@ const ADVANCED_PROMPT = `
 3. Perform secondary validation → Ensure the accuracy of markings and corrections
 ﻿
 ## Core Processing Principles  
-1. **Location Isolation Principle**  
-* Each text element must be processed independently based on visual evidence from its specific location  
-* Prohibit cross-region referencing, including but not limited to:  
-- Other paragraphs in the same document  
-- Adjacent table cells  
-- Header/footer content  
-- Residual text at image edges  
+1.  **Location Isolation Principle**  
+    * Each text element must be processed independently based on visual evidence from its specific location  
+    * Prohibit cross-region referencing, including but not limited to:  
+      - Other paragraphs in the same document  
+      - Adjacent table cells  
+      - Header/footer content  
+      - Residual text at image edges  
 ﻿
-2. **Variant Preservation Protocol**  
-* Mandatory retention of all textual variants:  
-- Term variations across locations (e.g., "豪享版" vs "豪华版")  
-- Case inconsistencies (e.g., "iPhone" vs "IPHONE")  
-- Format variants (e.g., "图1-1" vs "图1.1")  
-- Spelling variants (e.g., "登录/login" vs "登陆/landing")  
-* Implementation examples:  
-✓ Preserve both "甲方/Party A" and "甲方：/Party A:" in contracts  
-✓ Maintain alternating "WiFi" and "Wifi" in technical documents  
-✓ Retain mixed "ID" and "Id" usage within the same table  
-﻿
-3. **Visual Priority Hierarchy**  
-Processing priorities (highest to lowest):  
-1. Character-level pixel features (stroke morphology/degradation)  
-2. Local context (visual relationships within adjacent 3 characters)  
-3. Grammatical/semantic plausibility (ONLY for final judgment of characters with confidence <20%)  
-﻿
-4. **Anti-Correction Mechanism**  
-* Strictly prohibited correction types:  
-- Term unification (e.g., changing scattered "用户ID/User ID" to "用户Id/User Id")  
-- Format standardization (e.g., converting "2023年1月1日/Jan 1, 2023" to "2023-01-01")  
-- Synonym substitution (e.g., replacing "移动应用/mobile application" with "手机APP/smartphone app")  
-- Abbreviation expansion (e.g., expanding "北大/Beida" to "北京大学/Peking University")  
+2.  **Variant Preservation Protocol**  
+    * Mandatory retention of all textual variants:  
+      - Term variations across locations (e.g., "豪享版" vs "豪华版")  
+      - Case inconsistencies (e.g., "iPhone" vs "IPHONE")  
+      - Format variants (e.g., "图1-1" vs "图1.1")  
+      - Spelling variants (e.g., "登录/login" vs "登陆/landing")  
+    * Implementation examples:  
+      ✓ Preserve both "甲方/Party A" and "甲方：/Party A:" in contracts  
+      ✓ Maintain alternating "WiFi" and "Wifi" in technical documents  
+      ✓ Retain mixed "ID" and "Id" usage within the same table  
+
+3.  **Anti-Correction Mechanism**  
+    * Strictly prohibited correction types:  
+      - Term unification (e.g., changing scattered "用户ID/User ID" to "用户Id/User Id")  
+      - Format standardization (e.g., converting "2023年1月1日/Jan 1, 2023" to "2023-01-01")  
+      - Synonym substitution (e.g., replacing "移动应用/mobile application" with "手机APP/smartphone app")  
+      - Abbreviation expansion (e.g., expanding "北大/Beida" to "北京大学/Peking University")  
 ﻿
 ## Adhere to the following standards and requirements:
 1.  **Mathematical Formula Standards:**
-*   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
-*   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
-*   Keep variable names from the original text unchanged
-﻿
+    *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
+    *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+    *   Keep variable names from the original text unchanged
+
 2.  **Table Standards:**
-*   If the image contains table-like content, use standard Markdown table syntax for output. For example:
-| DESCRIPTION   | RATE    | HOURS | AMOUNT   |
-|---------------|---------|-------|----------|
-| Copy Writing  | $50/hr  | 4     | $200.00  |
-| Website Design| $50/hr  | 2     | $100.00  |
-*   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
-*   Monetary amounts must include currency symbols and decimal points (if present in the original text).
-*   If a table is identified, do not ignore the text outside of it.
-﻿
+    *   If the image contains table-like content, use standard Markdown table syntax for output. For example:
+      | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+      |---------------|---------|-------|----------|
+      | Copy Writing  | $50/hr  | 4     | $200.00  |
+      | Website Design| $50/hr  | 2     | $100.00  |
+    *   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
+    *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
+    *   If a table is identified, do not ignore the text outside of it.
+
 3.  **Paragraph Requirements:**
-*   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
-﻿
+    *   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
+
 4.  **Text Recognition Requirements:**
-*   Do not omit any text.
-*   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
-*   Technical terms and proper nouns must be accurately recognized.
-*   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
-﻿
+    *   Do not omit any text.
+    *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
+    *   Technical terms and proper nouns must be accurately recognized.
+    *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
+
 5.  **Identifying and Marking Uncertain Items:**
-*   For the following situations, **bold** marking must be used:
-- Characters with unclear outlines due to messy handwriting
-- Characters with broken strokes or interference from stains/smudges
-- Instances where similar characters are difficult to distinguish (e.g., "未" vs. "末")
-- Recognition results with a confidence score below 85%
-*   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
-*   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
-﻿
+    *   For the following situations, **bold** marking must be used:
+        - Characters with unclear outlines due to messy handwriting
+        - Characters with broken strokes or interference from stains/smudges
+        - Instances where similar characters are difficult to distinguish (e.g., "未" vs. "末")
+        - Recognition results with a confidence score below 85%
+    *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
+    *   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
+
 6.  **Contextual Proofreading and Correction:**
-*   Only correct errors that meet the following criteria:
-- Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
-- Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
-- Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
-*   Technical terms, brand names, model names, and proper nouns must be transcribed **EXACTLY** as they appear in their specific location. **Do not "correct" them to more common forms, even if similar but more common forms appear elsewhere in the SAME image.**
-*   Must ensure the corrected content is semantically coherent within the context.
-*   Make corrections if and only if the confidence in the correction is >90%.
-*   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
-﻿
+    *   Only correct errors that meet the following criteria:
+        - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
+        - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
+        - Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
+    *   Technical terms, brand names, model names, and proper nouns must be transcribed **EXACTLY** as they appear in their specific location. **Do not "correct" them to more common forms, even if similar but more common forms appear elsewhere in the SAME image.**
+    *   Must ensure the corrected content is semantically coherent within the context.
+    *   Make corrections if and only if the confidence in the correction is >90%.
+    *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
+
 7.  **Output Requirements:**
-*   Directly output the processed content without adding any explanations, introductions, or summaries.
+    *   Directly output the processed content without adding any explanations, introductions, or summaries.
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
