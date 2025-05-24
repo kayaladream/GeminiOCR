@@ -72,10 +72,10 @@ const ADVANCED_PROMPT = `
         - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
         - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
         - Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
-    *   Technical terms, brand names, model names, and proper nouns must be transcribed **EXACTLY** as they appear in their specific location. **Do not "correct" them to more common forms, even if similar but more common forms appear elsewhere in the SAME image.**
     *   Must ensure the corrected content is semantically coherent within the context.
     *   Make corrections if and only if the confidence in the correction is >90%.
     *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
+    *   Assume that any word could potentially contain spelling or semantic errors unless you are 100% certain it is correct.
 
 7.  **Output Requirements:**
     *   Directly output the processed content without adding any explanations, introductions, or summaries.
