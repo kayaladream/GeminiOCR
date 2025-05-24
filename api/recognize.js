@@ -65,7 +65,7 @@ const ADVANCED_PROMPT = `
         - Instances where similar characters are difficult to distinguish (e.g., "未" vs. "末")
         - Recognition results with a confidence score below 85%
     *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
-    *   For handwritten text, apply a more lenient marking strategy: mark any character with blurred or ambiguous strokes.
+    *   For handwritten text, apply a more lenient marking strategy: **bold** any character with blurred or ambiguous strokes.
 
 6.  **Contextual Proofreading and Correction:**
     *   Only correct errors that meet the following criteria:
