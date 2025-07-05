@@ -82,7 +82,7 @@ const ADVANCED_PROMPT = `
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const PROCESS_TIMEOUT = 55000; 
+const PROCESS_TIMEOUT = 200000; 
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
