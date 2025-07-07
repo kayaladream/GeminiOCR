@@ -50,7 +50,7 @@ const ADVANCED_PROMPT = `
     *   If a table is identified, do not ignore the text outside of it.
 
 3.  **Paragraph Requirements:**
-    *   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
+    *   Separate paragraphs with a single newline character.
     *   If the content is a list, please ensure each list item occupies a separate line and is separated by line breaks, for example:
         1 First item
         2 Second item
