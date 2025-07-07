@@ -44,8 +44,8 @@ const preprocessText = (text) => {
     return `$${formula.trim()}$`;
   });
   text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
-  text = text.replace(/(\d+)\.\s+/g, '$1.');
-  text = text.replace(/(\d+)\)\s+/g, '$1)');
+  text = text.replace(/(\d+)\.\s+/g, '$1. ');
+  text = text.replace(/(\d+)\)\s+/g, '$1) ');
   text = text.replace(/-\s+/g, '- '); 
   text = text.replace(/\*\s+/g, '* '); 
   text = text.replace(/\+\s+/g, '+ '); 
