@@ -26,6 +26,7 @@ const preprocessText = (text) => {
     return `__TABLE_${tables.length - 1}__`;
   });
 
+  // 对非表格部分进行处理
   text = text.replace(/\\\\\(/g, '$');
   text = text.replace(/\\\\\)/g, '$');
   text = text.replace(/\\\\\[/g, '$$');
@@ -119,6 +120,7 @@ function App() {
   const [showUrlInput, setShowUrlInput] = useState(false);
   const [imageUrl, setImageUrl] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [streamingText, setStreamingText] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
 
   const [isDraggingModal, setIsDraggingModal] = useState(false);
@@ -134,9 +136,8 @@ function App() {
     if (file.type.startsWith('image/')) {
       try {
         setIsStreaming(true);
-        setIsEditing(true); 
-        setEditText('');   
-
+        setStreamingText('');
+        setIsEditing(false);
         setResults(prev => {
           const newResults = [...prev];
           newResults[index] = '';
@@ -144,15 +145,6 @@ function App() {
         });
 
         let fullText = '';
-        
-        const processStream = async (stream) => {
-          for await (const chunk of stream) {
-            const chunkText = chunk.text();
-            fullText += chunkText;
-            const formattedText = preprocessText(fullText);
-            setEditText(formattedText); 
-          }
-        };
 
         if (process.env.NODE_ENV === 'development') {
           const model = genAI.getGenerativeModel({
@@ -193,7 +185,25 @@ function App() {
               * Directly output the processed content without adding any explanations, preambles, or summaries.
           `;
           const result = await model.generateContentStream([rulesPrompt, imagePart]);
-          await processStream(result.stream);
+
+          for await (const chunk of result.stream) {
+            const chunkText = chunk.text();
+            fullText += chunkText;
+            const formattedText = preprocessText(fullText);
+            setStreamingText(formattedText);
+             setResults(prevResults => {
+               const newResults = [...prevResults];
+               newResults[index] = formattedText;
+               return newResults;
+             });
+          }
+          const finalFormattedText = preprocessText(fullText);
+          setResults(prevResults => {
+            const newResults = [...prevResults];
+            newResults[index] = finalFormattedText;
+            return newResults;
+          });
+          setStreamingText(finalFormattedText);
 
         } else {
           const fileReader = new FileReader();
@@ -216,45 +226,44 @@ function App() {
 
            const streamReader = response.body.getReader();
            const decoder = new TextDecoder();
-           const stream = new ReadableStream({
-             async start(controller) {
-               while (true) {
-                 const { done, value } = await streamReader.read();
-                 if (done) break;
-                 const chunk = decoder.decode(value, { stream: true });
-                 const lines = chunk.split('\n');
-                 for (const line of lines) {
-                   if (line.startsWith('data: ')) {
-                     try {
-                       const rawData = line.slice(6);
-                       if (rawData.trim()) {
-                         const data = JSON.parse(rawData);
-                         if (data.text) {
-                           controller.enqueue({ text: () => data.text });
-                         }
-                       }
-                     } catch (e) {
-                       console.error('解析数据块时出错:', e, '原始数据:', line);
+
+           while (true) {
+             const { done, value } = await streamReader.read();
+             if (done) break;
+             const chunk = decoder.decode(value, { stream: true });
+             const lines = chunk.split('\n');
+             for (const line of lines) {
+               if (line.startsWith('data: ')) {
+                 try {
+                   const rawData = line.slice(6);
+                   if (rawData.trim()) {
+                     const data = JSON.parse(rawData);
+                     if (data.text) {
+                       fullText += data.text;
+                       const formattedText = preprocessText(fullText);
+                       setStreamingText(formattedText);
+                        setResults(prevResults => {
+                           const newResults = [...prevResults];
+                           newResults[index] = formattedText;
+                           return newResults;
+                         });
                      }
                    }
+                 } catch (e) {
+                   console.error('解析数据块时出错:', e, '原始数据:', line);
                  }
                }
-               controller.close();
              }
+           }
+           const finalFormattedText = preprocessText(fullText);
+           setResults(prevResults => {
+               const newResults = [...prevResults];
+               newResults[index] = finalFormattedText;
+               return newResults;
            });
-           await processStream(stream);
+           setStreamingText(finalFormattedText);
         }
-        
-        const finalFormattedText = preprocessText(fullText);
-        setResults(prevResults => {
-            const newResults = [...prevResults];
-            newResults[index] = finalFormattedText;
-            return newResults;
-        });
-        setEditText(finalFormattedText); 
-
         setIsStreaming(false);
-
       } catch (error) {
         console.error('文件处理或识别出错:', error);
         setResults(prevResults => {
@@ -262,7 +271,6 @@ function App() {
           newResults[index] = `识别出错, 请重试 (${error.message || error})`;
           return newResults;
         });
-        setIsEditing(false); 
         setIsStreaming(false);
         setIsLoading(false);
       }
@@ -292,6 +300,7 @@ function App() {
               setImages(prev => [...prev, imageUrl]);
               setResults(prev => [...prev, '']);
               setCurrentIndex(newIndex);
+              setIsEditing(false);
               await handleFile(file, newIndex);
             } catch (error) {
               console.error('处理粘贴的图片时出错:', error);
@@ -357,6 +366,7 @@ function App() {
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
+      setIsEditing(false);
       await concurrentProcess(
         files,
         (file, fileIndex) => handleFile(file, startIndex + fileIndex),
@@ -373,41 +383,16 @@ function App() {
     }
   };
 
-  useEffect(() => {
-    return () => {
-        if (isEditing) {
-            setResults(prevResults => {
-                const newResults = [...prevResults];
-                if (editText != null) {
-                    newResults[currentIndex] = editText;
-                }
-                return newResults;
-            });
-        }
-    };
-  }, [currentIndex, isEditing, editText]);
-
-  useEffect(() => {
-    if (isLoading || isStreaming) return; 
-
-    const currentResult = results[currentIndex];
-    if (currentResult != null && currentResult !== '') {
-        setEditText(currentResult);
-        setIsEditing(true);
-    } else {
-        setIsEditing(false);
-        setEditText('');
-    }
-  }, [currentIndex, results, isLoading, isStreaming]);
-
   const handlePrevImage = () => {
     if (currentIndex > 0 && !isLoading && !isStreaming) {
-      setCurrentIndex(currentIndex - 1);
+      const prevIndex = currentIndex - 1;
+      setCurrentIndex(prevIndex);
     }
   };
   const handleNextImage = () => {
     if (currentIndex < images.length - 1 && !isLoading && !isStreaming) {
-      setCurrentIndex(currentIndex + 1);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
     }
   };
 
@@ -459,6 +444,7 @@ function App() {
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
+      setIsEditing(false);
       await concurrentProcess(
         files,
         (file, fileIndex) => handleFile(file, startIndex + fileIndex),
@@ -538,6 +524,7 @@ function App() {
       setImages(prev => [...prev, imageUrlObject]);
       setResults(prev => [...prev, '']);
       setCurrentIndex(newIndex);
+      setIsEditing(false);
       await handleFile(file, newIndex);
       setImageUrl('');
 
@@ -561,8 +548,8 @@ function App() {
   };
 
   const handleCopyText = () => {
-    const textToCopy = editText;
-    if (textToCopy != null) {
+    const textToCopy = isEditing ? editText : results[currentIndex];
+    if (textToCopy != null && !isStreaming) {
         const plainText = textToCopy
             .replace(/\*\*(.*?)\*\*/g, '$1')
             .replace(/\*(.*?)\*/g, '$1')
@@ -606,59 +593,71 @@ function App() {
     return () => { window.removeEventListener('mousemove', handleMove, { capture: true }); window.removeEventListener('mouseup', handleEnd, { capture: true }); window.removeEventListener('touchmove', handleMove); window.removeEventListener('touchend', handleEnd); };
   }, [isDraggingModal, modalOffset]);
 
+
+  const handleEditClick = () => {
+      if (!isStreaming && results[currentIndex] != null) {
+          const currentMarkdown = results[currentIndex];
+          setEditText(currentMarkdown);
+          setIsEditing(true);
+      }
+  };
+
   useEffect(() => {
       if (isEditing && editDivRef.current) {
-          const currentScrollTop = editDivRef.current.scrollTop;
-          const selection = window.getSelection();
-          let caretPosition = null;
-          if (selection.rangeCount > 0 && editDivRef.current.contains(selection.anchorNode)) {
-              const range = selection.getRangeAt(0);
-              const preCaretRange = range.cloneRange();
-              preCaretRange.selectNodeContents(editDivRef.current);
-              preCaretRange.setEnd(range.endContainer, range.endOffset);
-              caretPosition = preCaretRange.toString().length;
-          }
-
           const rawHtml = marked.parse(editText || '', { breaks: true });
           const safeHtml = DOMPurify.sanitize(rawHtml);
           editDivRef.current.innerHTML = safeHtml;
-          
-          if (caretPosition !== null) {
-              let charCount = 0;
-              const nodeStack = [editDivRef.current];
-              let newRange = document.createRange();
-              let found = false;
-              while(nodeStack.length > 0 && !found) {
-                  const node = nodeStack.pop();
-                  if (node.nodeType === Node.TEXT_NODE) {
-                      const nextCharCount = charCount + node.length;
-                      if (caretPosition <= nextCharCount) {
-                          newRange.setStart(node, caretPosition - charCount);
-                          newRange.collapse(true);
-                          found = true;
-                      }
-                      charCount = nextCharCount;
-                  } else {
-                      let i = node.childNodes.length;
-                      while (i--) {
-                          nodeStack.push(node.childNodes[i]);
-                      }
+           setTimeout(() => {
+              if (editDivRef.current) {
+                  editDivRef.current.focus();
+                  const range = document.createRange();
+                  const sel = window.getSelection();
+                  if(sel && editDivRef.current.childNodes.length > 0) {
+                       range.setStart(editDivRef.current.childNodes[editDivRef.current.childNodes.length - 1], editDivRef.current.childNodes[editDivRef.current.childNodes.length - 1].textContent?.length ?? 0);
+                       range.collapse(true);
+                       sel.removeAllRanges();
+                       sel.addRange(range);
+                  } else if (sel) {
+                       range.selectNodeContents(editDivRef.current);
+                       range.collapse(false);
+                       sel.removeAllRanges();
+                       sel.addRange(range);
                   }
               }
-              if (found) {
-                  selection.removeAllRanges();
-                  selection.addRange(newRange);
-              }
-          }
-          editDivRef.current.scrollTop = currentScrollTop;
+           }, 50);
+      } else if (!isEditing && editDivRef.current) {
+
       }
-  }, [isEditing, editText]);
+  }, [isEditing]);
 
   const handleInput = (e) => {
       const currentHtml = e.currentTarget.innerHTML;
       const newMarkdown = turndownService.turndown(currentHtml);
       setEditText(newMarkdown);
   };
+
+
+  const handleSaveEdit = () => {
+      setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[currentIndex] = editText;
+          return newResults;
+      });
+      setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+      setIsEditing(false);
+      setEditText('');
+  };
+
+
+  useEffect(() => {
+      setIsEditing(false);
+      setEditText('');
+      setStreamingText(results[currentIndex] || '');
+  }, [currentIndex, results]);
+
 
   return (
     <div className="app">
@@ -734,12 +733,12 @@ function App() {
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
                 <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
-              <div className={`image-preview ${(isLoading || isStreaming) && !results[currentIndex] ? 'loading' : ''}`}>
+              <div className={`image-preview ${(isLoading || isStreaming) && !results[currentIndex] && !isEditing ? 'loading' : ''}`}>
                 <img
                   key={images[currentIndex]} src={images[currentIndex]} alt={`预览 ${currentIndex + 1}`} onClick={handleImageClick} style={{ cursor: images[currentIndex] ? 'zoom-in' : 'default' }}
                   onError={(e) => { console.error("加载图片失败:", images[currentIndex]); e.target.alt = '图片加载失败'; e.target.style.display = 'none'; e.target.closest('.image-preview')?.classList.add('load-error'); }}
                 />
-                {(isLoading || isStreaming) && !results[currentIndex] &&
+                {(isLoading || isStreaming) && !results[currentIndex] && !isEditing &&
                     <div className="loading-overlay">
                         {isStreaming ? '识别中...' : (isLoading ? '处理中...' : '')}
                     </div>
@@ -752,32 +751,64 @@ function App() {
         {(images.length > 0 || isLoading || isStreaming) && (
           <div className="result-section">
             <div className="result-container" ref={resultRef}>
-                {isLoading && !isEditing && (
+                {isLoading && !isStreaming && results[currentIndex] == null && !isEditing &&
                     <div className="loading result-loading">等待识别...</div>
-                )}
+                }
 
-                {isEditing ? (
+
+                 {((results[currentIndex] != null && !isEditing) || isStreaming) && ! (isLoading && !isStreaming && results[currentIndex] == null && !isEditing) && (
+                    <div className="result-text">
+                      <div className="result-header">
+                        <span aria-live="polite">
+                            第 {currentIndex + 1} 张图片的识别结果 {isStreaming ? '(识别中...)' : ''}
+                        </span>
+                         {results[currentIndex] != null && !isStreaming && !isEditing && (
+                            <div style={{ display: 'flex', gap: '8px'}}>
+                                <button className="edit-button" onClick={handleEditClick}>编辑</button>
+                                <button className="copy-button view-copy-button" onClick={handleCopyText}>复制内容</button>
+                            </div>
+                         )}
+                      </div>
+                       <div className="gradient-text">
+                         <ReactMarkdown
+                           remarkPlugins={[remarkMath]}
+                           rehypePlugins={[rehypeKatex]}
+                           components={{
+                             table: ({ node, ...props }) => (<div style={{ overflowX: 'auto', maxWidth: '100%' }}><table className="markdown-table" {...props} /></div>),
+                             th: ({ node, ...props }) => (<th className="markdown-th" {...props} />),
+                             td: ({ node, ...props }) => (<td className="markdown-td" {...props} />),
+                           }}
+                         >
+                           {isStreaming ? streamingText : (results[currentIndex] || '')}
+                         </ReactMarkdown>
+                       </div>
+                    </div>
+                 )}
+
+                {isEditing && (
                     <div className="result-text editing-area">
                          <div className="result-header">
-                            <span>{isStreaming ? '识别中...' : `第 ${currentIndex + 1} 张图片的结果`}</span>
+                            <span>编辑第 {currentIndex + 1} 张图片的结果</span>
                             <div>
-                                 <button className="copy-button edit-copy-button" onClick={handleCopyText}>复制内容</button>
+                                <button className="save-button" onClick={handleSaveEdit}>保存</button>
+                                <button className="cancel-button" onClick={handleCancelEdit}>取消</button>
+                                 <button className="copy-button edit-copy-button" onClick={handleCopyText}>复制编辑内容</button>
                             </div>
                         </div>
                         <div
                             ref={editDivRef}
                             contentEditable={true}
-                            className={`edit-content-editable ${isStreaming ? 'streaming-edit' : ''}`}
+                            className="edit-content-editable"
                             onInput={handleInput}
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
                             spellCheck="false"
                         />
                     </div>
-                ) : (
-                    !isLoading && images.length > 0 && (
-                        <div className="result-placeholder">当前图片无识别结果或识别失败。</div>
-                    )
+                )}
+
+                {!isLoading && !isStreaming && results[currentIndex] == null && !isEditing && images.length > 0 && (
+                    <div className="result-placeholder">当前图片无识别结果或识别失败。</div>
                 )}
             </div>
           </div>
