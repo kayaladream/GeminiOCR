@@ -51,7 +51,6 @@ const preprocessText = (text) => {
   text = text.replace(/\+\s+/g, '+'); 
   text = text.replace(/>\s+/g, '>'); 
   text = text.replace(/#\s+/g, '#');
-  });
 
   return text.trim();
 };
