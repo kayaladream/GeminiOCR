@@ -49,19 +49,13 @@ const ADVANCED_PROMPT = `
     *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
     *   If a table is identified, do not ignore the text outside of it.
 
-3.  **Paragraph Requirements:**
-    *   Separate paragraphs with a single newline character.
-    *   If the content is a list, please ensure each list item occupies a separate line and is separated by line breaks, for example:
-        1 First item
-        2 Second item
-
-4.  **Text Recognition Requirements:**
+3.  **Text Recognition Requirements:**
     *   Do not omit any text.
     *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
     *   Technical terms and proper nouns must be accurately recognized.
     *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
 
-5.  **Identifying and Marking Uncertain Items:**
+4.  **Identifying and Marking Uncertain Items:**
     *   For the following situations, **bold** marking must be used:
         - Characters with unclear outlines due to messy handwriting
         - Characters with broken strokes or interference from stains/smudges
@@ -70,7 +64,7 @@ const ADVANCED_PROMPT = `
     *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
     *   For handwritten text, apply a more lenient marking strategy: **bold** any character with blurred or ambiguous strokes.
 
-6.  **Contextual Proofreading and Correction:**
+5.  **Contextual Proofreading and Correction:**
     *   Only correct errors that meet the following criteria:
         - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
         - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
@@ -80,7 +74,7 @@ const ADVANCED_PROMPT = `
     *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
     *   Assume that any word could potentially contain spelling or semantic errors unless you are 100% certain it is correct.
 
-7.  **Output Requirements:**
+6.  **Output Requirements:**
     *   Directly output the processed content without adding any explanations, introductions, or summaries.
 `;
 
