@@ -21,8 +21,6 @@ const preprocessText = (text) => {
   if (!text) return '';
   
   const tables = [];
-  // 1. 使用修正后的正则表达式来匹配整个表格
-  // 这个表达式的含义是：匹配一个表头行，一个分隔行，以及后面跟着的【一个或多个】数据行。
   text = text.replace(/\|[^\n]+\|\n\|[-|\s]+\|(?:\n\|[^\n]+\|)+/g, (match) => {
     tables.push(match);
     return `__TABLE_${tables.length - 1}__`;
@@ -48,22 +46,15 @@ const preprocessText = (text) => {
   text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
   text = text.replace(/(\d+)\.\s+/g, '$1.');
   text = text.replace(/(\d+)\)\s+/g, '$1)');
-  text = text.replace(/-\s+/g, '- '); // 注意：为了保持列表格式，这里最好保留一个空格
-  text = text.replace(/\*\s+/g, '* '); // 注意：同上
-  text = text.replace(/\+\s+/g, '+ '); // 注意：同上
-  text = text.replace(/>\s+/g, '> '); // 注意：同上
-  text = text.replace(/#\s+/g, '# '); // 注意：同上
-  
-  // 2. 移除或注释掉这行破坏性的代码
-  // text = text.replace(/([^\n])\n([^\n])/g, '$1\n\n$2'); 
-  // Gemini 已经按照 prompt 要求返回了正确的段落间距，前端不需要再做这种强制处理。
-  // 如果确实需要，也应该在确认不是表格内容的情况下进行。
+  text = text.replace(/-\s+/g, '- '); 
+  text = text.replace(/\*\s+/g, '* '); 
+  text = text.replace(/\+\s+/g, '+ '); 
+  text = text.replace(/>\s+/g, '> '); 
+  text = text.replace(/#\s+/g, '# '); 
   
   text = text.replace(/\n{3,}/g, '\n\n');
 
-  // 将表格恢复回去
   text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
-    // 恢复时，确保表格前后有空行，以和其他 Markdown 元素分隔
     return `\n\n${tables[parseInt(index)]}\n\n`;
   });
 
