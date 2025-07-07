@@ -51,11 +51,6 @@ const preprocessText = (text) => {
   text = text.replace(/\+\s+/g, '+'); 
   text = text.replace(/>\s+/g, '>'); 
   text = text.replace(/#\s+/g, '#');
-  
-  text = text.replace(/\n{3,}/g, '\n');
-
-  text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
-    return `\n${tables[parseInt(index)]}\n`;
   });
 
   return text.trim();
