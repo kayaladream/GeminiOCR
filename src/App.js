@@ -43,19 +43,19 @@ const preprocessText = (text) => {
     return `$${formula.trim()}$`;
   });
   text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
-  text = text.replace(/(\d+)\.\s+/g, '$1 ');
-  text = text.replace(/(\d+)\.\s+/g, '$1. ');
-  text = text.replace(/(\d+)\)\s+/g, '$1) ');
-  text = text.replace(/-\s+/g, '- '); 
-  text = text.replace(/\*\s+/g, '* '); 
-  text = text.replace(/\+\s+/g, '+ '); 
-  text = text.replace(/>\s+/g, '> '); 
-  text = text.replace(/#\s+/g, '# ');
+  text = text.replace(/(\d+)\.\s+/g, '$1');
+  text = text.replace(/(\d+)\.\s+/g, '$1.');
+  text = text.replace(/(\d+)\)\s+/g, '$1)');
+  text = text.replace(/-\s+/g, '-'); 
+  text = text.replace(/\*\s+/g, '*'); 
+  text = text.replace(/\+\s+/g, '+'); 
+  text = text.replace(/>\s+/g, '>'); 
+  text = text.replace(/#\s+/g, '#');
   
-  text = text.replace(/\n{3,}/g, '\n\n');
+  text = text.replace(/\n{3,}/g, '\n');
 
   text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
-    return `\n\n${tables[parseInt(index)]}\n\n`;
+    return `\n${tables[parseInt(index)]}\n`;
   });
 
   return text.trim();
