@@ -966,8 +966,3 @@ main.has-content {
   padding: 2rem;
   font-style: italic;
 }
-
-.edit-content-editable p {
-  margin: 0;
-  padding: 0;
-}
