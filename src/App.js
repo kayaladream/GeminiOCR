@@ -52,10 +52,10 @@ const preprocessText = (text) => {
   text = text.replace(/>\s+/g, '>'); 
   text = text.replace(/#\s+/g, '#');
   
-  text = text.replace(/\n{2,}/g, '\n');
+  text = text.replace(/\n{2,}/g, '\n\n');
 
   text = text.replace(/__TABLE_(\d+)__/g, (match, index) => {
-    return `\n${tables[parseInt(index)]}\n`;
+    return `\n\n${tables[parseInt(index)]}\n\n`;
   });
 
   return text.trim();
