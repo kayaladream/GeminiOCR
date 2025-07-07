@@ -59,6 +59,14 @@
   to { opacity: 1; transform: scale(1); }
 }
 
+/* --- NEW ANIMATION FOR EDITOR BORDER --- */
+@keyframes gradientBorder {
+  0% { border-color: #0071e3; }
+  33% { border-color: #6200ff; }
+  66% { border-color: #ff2cab; }
+  100% { border-color: #0071e3; }
+}
+
 body {
   background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
   min-height: 100vh;
@@ -893,6 +901,12 @@ main.has-content {
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
+/* --- MODIFIED: Add streaming animation class --- */
+.edit-content-editable.streaming-edit {
+  border-width: 2px;
+  animation: gradientBorder 2s linear infinite;
+}
+
 .edit-content-editable:focus {
   border-color: #86b7fe;
   box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
@@ -904,9 +918,12 @@ main.has-content {
 .edit-content-editable em {
   font-style: italic;
 }
+
+/* --- MODIFIED: Remove paragraph margin --- */
 .edit-content-editable p {
-  margin: 0 0 1em 0;
+  margin: 0;
 }
+
 .edit-content-editable ul,
 .edit-content-editable ol {
   padding-left: 2em;
