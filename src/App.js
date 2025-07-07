@@ -26,7 +26,6 @@ const preprocessText = (text) => {
     return `__TABLE_${tables.length - 1}__`;
   });
 
-  // 对非表格部分进行处理
   text = text.replace(/\\\\\(/g, '$');
   text = text.replace(/\\\\\)/g, '$');
   text = text.replace(/\\\\\[/g, '$$');
@@ -127,7 +126,8 @@ function App() {
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [modalOffset, setModalOffset] = useState({ x: 0, y: 0 });
   const [modalScale, setModalScale] = useState(1);
-  
+
+  const [editText, setEditText] = useState('');
   const editDivRef = useRef(null);
 
   const handleFile = useCallback(async (file, index) => {
@@ -541,9 +541,8 @@ function App() {
   };
 
   const handleCopyText = () => {
-    const textToCopy = results[currentIndex];
-    if (textToCopy != null && !isStreaming) {
-        const plainText = textToCopy
+    if (editText != null && !isStreaming) {
+        const plainText = editText
             .replace(/\*\*(.*?)\*\*/g, '$1')
             .replace(/\*(.*?)\*/g, '$1')
             .replace(/`(.*?)`/g, '$1')
@@ -585,53 +584,42 @@ function App() {
     return () => { window.removeEventListener('mousemove', handleMove, { capture: true }); window.removeEventListener('mouseup', handleEnd, { capture: true }); window.removeEventListener('touchmove', handleMove); window.removeEventListener('touchend', handleEnd); };
   }, [isDraggingModal, modalOffset]);
 
-  // This effect manages the content of the editable div.
-  // It updates the div when the result changes from an external source (streaming, switching images),
-  // but prevents re-rendering (and losing cursor position) when the user is typing.
-  useEffect(() => {
-      const editor = editDivRef.current;
-      if (!editor) return;
-
-      const markdownState = results[currentIndex] || '';
-      const editorMarkdown = turndownService.turndown(editor.innerHTML);
-
-      if (markdownState !== editorMarkdown) {
-          const rawHtml = marked.parse(markdownState, { breaks: true });
-          const safeHtml = DOMPurify.sanitize(rawHtml, { ADD_ATTR: ['contenteditable'] });
-          editor.innerHTML = safeHtml;
-
-          // After programmatically setting content, move cursor to the end.
-          setTimeout(() => {
-              if (editDivRef.current) {
-                  editDivRef.current.focus();
-                  const range = document.createRange();
-                  const sel = window.getSelection();
-                  if (sel) {
-                      range.selectNodeContents(editDivRef.current);
-                      range.collapse(false); // Move to the end
-                      sel.removeAllRanges();
-                      sel.addRange(range);
-                  }
-              }
-          }, 0);
-      }
-  }, [currentIndex, results]);
-
   const handleInput = (e) => {
-      // Prevent updates while streaming to avoid race conditions.
-      if (isStreaming) return;
       const currentHtml = e.currentTarget.innerHTML;
       const newMarkdown = turndownService.turndown(currentHtml);
+      setEditText(newMarkdown);
       setResults(prevResults => {
           const newResults = [...prevResults];
-          newResults[currentIndex] = newMarkdown;
+          if (currentIndex < newResults.length) {
+              newResults[currentIndex] = newMarkdown;
+          }
           return newResults;
       });
   };
 
   useEffect(() => {
-      setStreamingText(results[currentIndex] || '');
-  }, [currentIndex, results]);
+      if (isStreaming) {
+          // During streaming, we show the ReactMarkdown component, not the editor.
+          return;
+      }
+  
+      const currentMarkdown = results[currentIndex] || '';
+      setEditText(currentMarkdown);
+  
+      if (editDivRef.current) {
+          const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
+          
+          // Only update the editor's HTML if the content is different.
+          // This prevents the cursor from jumping to the end on every keystroke.
+          // This logic is crucial for a good editing experience.
+          if (editorMarkdown !== currentMarkdown) {
+              const rawHtml = marked.parse(currentMarkdown, { breaks: true });
+              const safeHtml = DOMPurify.sanitize(rawHtml);
+              editDivRef.current.innerHTML = safeHtml;
+          }
+      }
+  }, [currentIndex, results, isStreaming]);
+
 
   return (
     <div className="app">
@@ -707,12 +695,12 @@ function App() {
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
                 <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
-              <div className={`image-preview ${isLoading || isStreaming ? 'loading' : ''}`}>
+              <div className={`image-preview ${isLoading && !results[currentIndex] ? 'loading' : ''}`}>
                 <img
                   key={images[currentIndex]} src={images[currentIndex]} alt={`预览 ${currentIndex + 1}`} onClick={handleImageClick} style={{ cursor: images[currentIndex] ? 'zoom-in' : 'default' }}
                   onError={(e) => { console.error("加载图片失败:", images[currentIndex]); e.target.alt = '图片加载失败'; e.target.style.display = 'none'; e.target.closest('.image-preview')?.classList.add('load-error'); }}
                 />
-                {(isLoading || isStreaming) &&
+                {isLoading && !results[currentIndex] &&
                     <div className="loading-overlay">
                         {isStreaming ? '识别中...' : (isLoading ? '处理中...' : '')}
                     </div>
@@ -725,25 +713,44 @@ function App() {
         {(images.length > 0 || isLoading || isStreaming) && (
           <div className="result-section">
             <div className="result-container" ref={resultRef}>
-                {isLoading && !isStreaming && results[currentIndex] == null && (
+                {isLoading && !isStreaming && results[currentIndex] == null &&
                     <div className="loading result-loading">等待识别...</div>
+                }
+
+                {isStreaming && (
+                    <div className="result-text">
+                      <div className="result-header">
+                        <span aria-live="polite">
+                            第 {currentIndex + 1} 张图片的识别结果 (识别中...)
+                        </span>
+                      </div>
+                       <div className="gradient-text">
+                         <ReactMarkdown
+                           remarkPlugins={[remarkMath]}
+                           rehypePlugins={[rehypeKatex]}
+                           components={{
+                             table: ({ node, ...props }) => (<div style={{ overflowX: 'auto', maxWidth: '100%' }}><table className="markdown-table" {...props} /></div>),
+                             th: ({ node, ...props }) => (<th className="markdown-th" {...props} />),
+                             td: ({ node, ...props }) => (<td className="markdown-td" {...props} />),
+                           }}
+                         >
+                           {streamingText}
+                         </ReactMarkdown>
+                       </div>
+                    </div>
                 )}
-                
-                {(results[currentIndex] != null || isStreaming) ? (
+
+                {!isStreaming && results[currentIndex] != null && (
                     <div className="result-text editing-area">
                          <div className="result-header">
-                            <span aria-live="polite">
-                                第 {currentIndex + 1} 张图片的识别结果 {isStreaming ? '(识别中...)' : ''}
-                            </span>
-                             {results[currentIndex] != null && !isStreaming && (
-                                <div style={{ display: 'flex', gap: '8px'}}>
-                                    <button className="copy-button" onClick={handleCopyText}>复制内容</button>
-                                </div>
-                             )}
+                            <span>编辑第 {currentIndex + 1} 张图片的结果</span>
+                            <div>
+                                <button className="copy-button" onClick={handleCopyText}>复制内容</button>
+                            </div>
                         </div>
                         <div
                             ref={editDivRef}
-                            contentEditable={!isStreaming}
+                            contentEditable={true}
                             className="edit-content-editable"
                             onInput={handleInput}
                             suppressContentEditableWarning={true}
@@ -751,10 +758,10 @@ function App() {
                             spellCheck="false"
                         />
                     </div>
-                ) : (
-                  !isLoading && images.length > 0 && (
+                )}
+
+                {!isLoading && !isStreaming && results[currentIndex] == null && images.length > 0 && (
                     <div className="result-placeholder">当前图片无识别结果或识别失败。</div>
-                  )
                 )}
             </div>
           </div>
