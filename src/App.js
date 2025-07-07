@@ -35,22 +35,6 @@ const preprocessText = (text) => {
     const content = match.slice(3, -3).trim();
     return content;
   });
-  text = text.replace(/```\w*\n?/g, '');
-  text = text.replace(/(\d+)\.\s*\n+/g, '$1. ');
-  text = text.replace(/\n*\$\$\s*([\s\S]*?)\s*\$\$\n*/g, (match, formula) => {
-    return `\n\n$$${formula.trim()}$$\n\n`;
-  });
-  text = text.replace(/\$\s*(.*?)\s*\$/g, (match, formula) => {
-    return `$${formula.trim()}$`;
-  });
-  text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
-  text = text.replace(/(\d+)\.\s+/g, '$1. ');
-  text = text.replace(/(\d+)\)\s+/g, '$1) ');
-  text = text.replace(/-\s+/g, '- '); 
-  text = text.replace(/\*\s+/g, '* '); 
-  text = text.replace(/\+\s+/g, '+ '); 
-  text = text.replace(/>\s+/g, '> '); 
-  text = text.replace(/#\s+/g, '# '); 
 
   text = text.replace(/\n{3,}/g, '\n\n');
 
