@@ -878,7 +878,7 @@ main.has-content {
   overflow-y: auto;
   font-size: 1.13rem;
   font-family: "微软雅黑", serif;
-  line-height: 1.6;
+  line-height: 1.5;
   border: 1px solid #ced4da;
   border-radius: 8px;
   padding: 15px;
@@ -905,7 +905,7 @@ main.has-content {
   font-style: italic;
 }
 .edit-content-editable p {
-  margin: 0 0 0.5em 0;
+  margin: 0 0 0em 0;
 }
 .edit-content-editable ul,
 .edit-content-editable ol {
