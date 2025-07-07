@@ -46,11 +46,11 @@ const preprocessText = (text) => {
   text = text.replace(/(\d+\.)\s*(\$\$[\s\S]*?\$\$)/g, '$1\n\n$2');
   text = text.replace(/(\d+)\.\s+/g, '$1.');
   text = text.replace(/(\d+)\)\s+/g, '$1)');
-  text = text.replace(/-\s+/g, '-'); 
-  text = text.replace(/\*\s+/g, '*'); 
-  text = text.replace(/\+\s+/g, '+'); 
-  text = text.replace(/>\s+/g, '>'); 
-  text = text.replace(/#\s+/g, '#'); 
+  text = text.replace(/-\s+/g, '- '); 
+  text = text.replace(/\*\s+/g, '* '); 
+  text = text.replace(/\+\s+/g, '+ '); 
+  text = text.replace(/>\s+/g, '> '); 
+  text = text.replace(/#\s+/g, '# '); 
 
   text = text.replace(/\n{3,}/g, '\n\n');
 
