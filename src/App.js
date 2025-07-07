@@ -204,6 +204,8 @@ function App() {
             return newResults;
           });
           setStreamingText(finalFormattedText);
+          setEditText(finalFormattedText);
+          setIsEditing(true);
 
         } else {
           const fileReader = new FileReader();
@@ -262,6 +264,8 @@ function App() {
                return newResults;
            });
            setStreamingText(finalFormattedText);
+           setEditText(finalFormattedText);
+           setIsEditing(true);
         }
         setIsStreaming(false);
       } catch (error) {
@@ -628,7 +632,7 @@ function App() {
       } else if (!isEditing && editDivRef.current) {
 
       }
-  }, [isEditing]);
+  }, [isEditing, editText]);
 
   const handleInput = (e) => {
       const currentHtml = e.currentTarget.innerHTML;
