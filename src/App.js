@@ -613,7 +613,7 @@ function App() {
           // This prevents the cursor from jumping to the end on every keystroke.
           // This logic is crucial for a good editing experience.
           if (editorMarkdown !== currentMarkdown) {
-              const rawHtml = marked.parseInline(currentMarkdown, { breaks: true });
+              const rawHtml = marked.parse(currentMarkdown, { breaks: true });
               const safeHtml = DOMPurify.sanitize(rawHtml);
               editDivRef.current.innerHTML = safeHtml;
           }
