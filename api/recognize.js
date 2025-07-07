@@ -52,8 +52,8 @@ const ADVANCED_PROMPT = `
 3.  **Paragraph Requirements:**
     *   Separate paragraphs with two newline characters to ensure correct paragraph rendering in Markdown.
     *   If the content is a list, please ensure each list item occupies a separate line and is separated by line breaks, for example:
-        1.First item
-        2.Second item"
+        1 First item
+        2 Second item
 
 4.  **Text Recognition Requirements:**
     *   Do not omit any text.
