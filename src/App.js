@@ -26,7 +26,6 @@ const preprocessText = (text) => {
     return `__TABLE_${tables.length - 1}__`;
   });
 
-  // 对非表格部分进行处理
   text = text.replace(/\\\\\(/g, '$');
   text = text.replace(/\\\\\)/g, '$');
   text = text.replace(/\\\\\[/g, '$$');
@@ -135,8 +134,8 @@ function App() {
     if (file.type.startsWith('image/')) {
       try {
         setIsStreaming(true);
-        setIsEditing(true); // Immediately switch to editing mode
-        setEditText('');    // Clear editor for streaming input
+        setIsEditing(true); 
+        setEditText('');   
 
         setResults(prev => {
           const newResults = [...prev];
@@ -151,7 +150,7 @@ function App() {
             const chunkText = chunk.text();
             fullText += chunkText;
             const formattedText = preprocessText(fullText);
-            setEditText(formattedText); // Stream text directly to the editor state
+            setEditText(formattedText); 
           }
         };
 
@@ -252,7 +251,7 @@ function App() {
             newResults[index] = finalFormattedText;
             return newResults;
         });
-        setEditText(finalFormattedText); // Ensure final text is set
+        setEditText(finalFormattedText); 
 
         setIsStreaming(false);
 
@@ -263,7 +262,7 @@ function App() {
           newResults[index] = `识别出错, 请重试 (${error.message || error})`;
           return newResults;
         });
-        setIsEditing(false); // Hide editor on error
+        setIsEditing(false); 
         setIsStreaming(false);
         setIsLoading(false);
       }
@@ -374,9 +373,22 @@ function App() {
     }
   };
 
-  // This effect now correctly handles switching between images
   useEffect(() => {
-    if (isLoading || isStreaming) return; // Don't interfere with ongoing recognition
+    return () => {
+        if (isEditing) {
+            setResults(prevResults => {
+                const newResults = [...prevResults];
+                if (editText != null) {
+                    newResults[currentIndex] = editText;
+                }
+                return newResults;
+            });
+        }
+    };
+  }, [currentIndex, isEditing, editText]);
+
+  useEffect(() => {
+    if (isLoading || isStreaming) return; 
 
     const currentResult = results[currentIndex];
     if (currentResult != null && currentResult !== '') {
@@ -648,21 +660,6 @@ function App() {
       setEditText(newMarkdown);
   };
 
-
-  const handleSaveEdit = () => {
-      setResults(prevResults => {
-          const newResults = [...prevResults];
-          newResults[currentIndex] = editText;
-          return newResults;
-      });
-      // Optionally provide feedback, e.g., a "Saved!" message
-  };
-
-  const handleCancelEdit = () => {
-      // Revert to the last recognized/saved text for the current image
-      setEditText(results[currentIndex] || '');
-  };
-
   return (
     <div className="app">
        <header>
@@ -762,17 +759,15 @@ function App() {
                 {isEditing ? (
                     <div className="result-text editing-area">
                          <div className="result-header">
-                            <span>{isStreaming ? '识别中...' : `编辑第 ${currentIndex + 1} 张图片的结果`}</span>
+                            <span>{isStreaming ? '识别中...' : `第 ${currentIndex + 1} 张图片的结果`}</span>
                             <div>
-                                <button className="save-button" onClick={handleSaveEdit}>保存</button>
-                                <button className="cancel-button" onClick={handleCancelEdit}>取消</button>
                                  <button className="copy-button edit-copy-button" onClick={handleCopyText}>复制内容</button>
                             </div>
                         </div>
                         <div
                             ref={editDivRef}
                             contentEditable={true}
-                            className="edit-content-editable"
+                            className={`edit-content-editable ${isStreaming ? 'streaming-edit' : ''}`}
                             onInput={handleInput}
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
