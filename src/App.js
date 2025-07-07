@@ -127,9 +127,7 @@ function App() {
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [modalOffset, setModalOffset] = useState({ x: 0, y: 0 });
   const [modalScale, setModalScale] = useState(1);
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState('');
+  
   const editDivRef = useRef(null);
 
   const handleFile = useCallback(async (file, index) => {
@@ -137,7 +135,6 @@ function App() {
       try {
         setIsStreaming(true);
         setStreamingText('');
-        setIsEditing(false);
         setResults(prev => {
           const newResults = [...prev];
           newResults[index] = '';
@@ -279,7 +276,7 @@ function App() {
 
   useEffect(() => {
     const handlePaste = async (e) => {
-      if (isEditing && editDivRef.current && editDivRef.current.contains(e.target)) {
+      if (editDivRef.current && editDivRef.current.contains(e.target)) {
         return;
       }
        if (showModal) {
@@ -300,7 +297,6 @@ function App() {
               setImages(prev => [...prev, imageUrl]);
               setResults(prev => [...prev, '']);
               setCurrentIndex(newIndex);
-              setIsEditing(false);
               await handleFile(file, newIndex);
             } catch (error) {
               console.error('处理粘贴的图片时出错:', error);
@@ -325,7 +321,7 @@ function App() {
     return () => {
       document.removeEventListener('paste', handlePaste);
     };
-  }, [images.length, handleFile, isEditing, showModal]);
+  }, [images.length, handleFile, showModal]);
 
   const concurrentProcess = async (items, processor, maxConcurrent = 5) => {
     let activePromises = 0;
@@ -366,7 +362,6 @@ function App() {
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
-      setIsEditing(false);
       await concurrentProcess(
         files,
         (file, fileIndex) => handleFile(file, startIndex + fileIndex),
@@ -444,7 +439,6 @@ function App() {
       setImages(prev => [...prev, ...imageUrls]);
       setResults(prev => [...prev, ...new Array(files.length).fill('')]);
       setCurrentIndex(startIndex);
-      setIsEditing(false);
       await concurrentProcess(
         files,
         (file, fileIndex) => handleFile(file, startIndex + fileIndex),
@@ -524,7 +518,6 @@ function App() {
       setImages(prev => [...prev, imageUrlObject]);
       setResults(prev => [...prev, '']);
       setCurrentIndex(newIndex);
-      setIsEditing(false);
       await handleFile(file, newIndex);
       setImageUrl('');
 
@@ -548,7 +541,7 @@ function App() {
   };
 
   const handleCopyText = () => {
-    const textToCopy = isEditing ? editText : results[currentIndex];
+    const textToCopy = results[currentIndex];
     if (textToCopy != null && !isStreaming) {
         const plainText = textToCopy
             .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -583,7 +576,6 @@ function App() {
     }
 };
 
-
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
   const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
   useEffect(() => {
@@ -593,71 +585,53 @@ function App() {
     return () => { window.removeEventListener('mousemove', handleMove, { capture: true }); window.removeEventListener('mouseup', handleEnd, { capture: true }); window.removeEventListener('touchmove', handleMove); window.removeEventListener('touchend', handleEnd); };
   }, [isDraggingModal, modalOffset]);
 
-
-  const handleEditClick = () => {
-      if (!isStreaming && results[currentIndex] != null) {
-          const currentMarkdown = results[currentIndex];
-          setEditText(currentMarkdown);
-          setIsEditing(true);
-      }
-  };
-
+  // This effect manages the content of the editable div.
+  // It updates the div when the result changes from an external source (streaming, switching images),
+  // but prevents re-rendering (and losing cursor position) when the user is typing.
   useEffect(() => {
-      if (isEditing && editDivRef.current) {
-          const rawHtml = marked.parse(editText || '', { breaks: true });
-          const safeHtml = DOMPurify.sanitize(rawHtml);
-          editDivRef.current.innerHTML = safeHtml;
-           setTimeout(() => {
+      const editor = editDivRef.current;
+      if (!editor) return;
+
+      const markdownState = results[currentIndex] || '';
+      const editorMarkdown = turndownService.turndown(editor.innerHTML);
+
+      if (markdownState !== editorMarkdown) {
+          const rawHtml = marked.parse(markdownState, { breaks: true });
+          const safeHtml = DOMPurify.sanitize(rawHtml, { ADD_ATTR: ['contenteditable'] });
+          editor.innerHTML = safeHtml;
+
+          // After programmatically setting content, move cursor to the end.
+          setTimeout(() => {
               if (editDivRef.current) {
                   editDivRef.current.focus();
                   const range = document.createRange();
                   const sel = window.getSelection();
-                  if(sel && editDivRef.current.childNodes.length > 0) {
-                       range.setStart(editDivRef.current.childNodes[editDivRef.current.childNodes.length - 1], editDivRef.current.childNodes[editDivRef.current.childNodes.length - 1].textContent?.length ?? 0);
-                       range.collapse(true);
-                       sel.removeAllRanges();
-                       sel.addRange(range);
-                  } else if (sel) {
-                       range.selectNodeContents(editDivRef.current);
-                       range.collapse(false);
-                       sel.removeAllRanges();
-                       sel.addRange(range);
+                  if (sel) {
+                      range.selectNodeContents(editDivRef.current);
+                      range.collapse(false); // Move to the end
+                      sel.removeAllRanges();
+                      sel.addRange(range);
                   }
               }
-           }, 50);
-      } else if (!isEditing && editDivRef.current) {
-
+          }, 0);
       }
-  }, [isEditing]);
-
-  const handleInput = (e) => {
-      const currentHtml = e.currentTarget.innerHTML;
-      const newMarkdown = turndownService.turndown(currentHtml);
-      setEditText(newMarkdown);
-  };
-
-
-  const handleSaveEdit = () => {
-      setResults(prevResults => {
-          const newResults = [...prevResults];
-          newResults[currentIndex] = editText;
-          return newResults;
-      });
-      setIsEditing(false);
-  };
-
-  const handleCancelEdit = () => {
-      setIsEditing(false);
-      setEditText('');
-  };
-
-
-  useEffect(() => {
-      setIsEditing(false);
-      setEditText('');
-      setStreamingText(results[currentIndex] || '');
   }, [currentIndex, results]);
 
+  const handleInput = (e) => {
+      // Prevent updates while streaming to avoid race conditions.
+      if (isStreaming) return;
+      const currentHtml = e.currentTarget.innerHTML;
+      const newMarkdown = turndownService.turndown(currentHtml);
+      setResults(prevResults => {
+          const newResults = [...prevResults];
+          newResults[currentIndex] = newMarkdown;
+          return newResults;
+      });
+  };
+
+  useEffect(() => {
+      setStreamingText(results[currentIndex] || '');
+  }, [currentIndex, results]);
 
   return (
     <div className="app">
@@ -733,12 +707,12 @@ function App() {
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
                 <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
-              <div className={`image-preview ${(isLoading || isStreaming) && !results[currentIndex] && !isEditing ? 'loading' : ''}`}>
+              <div className={`image-preview ${isLoading || isStreaming ? 'loading' : ''}`}>
                 <img
                   key={images[currentIndex]} src={images[currentIndex]} alt={`预览 ${currentIndex + 1}`} onClick={handleImageClick} style={{ cursor: images[currentIndex] ? 'zoom-in' : 'default' }}
                   onError={(e) => { console.error("加载图片失败:", images[currentIndex]); e.target.alt = '图片加载失败'; e.target.style.display = 'none'; e.target.closest('.image-preview')?.classList.add('load-error'); }}
                 />
-                {(isLoading || isStreaming) && !results[currentIndex] && !isEditing &&
+                {(isLoading || isStreaming) &&
                     <div className="loading-overlay">
                         {isStreaming ? '识别中...' : (isLoading ? '处理中...' : '')}
                     </div>
@@ -751,53 +725,25 @@ function App() {
         {(images.length > 0 || isLoading || isStreaming) && (
           <div className="result-section">
             <div className="result-container" ref={resultRef}>
-                {isLoading && !isStreaming && results[currentIndex] == null && !isEditing &&
+                {isLoading && !isStreaming && results[currentIndex] == null && (
                     <div className="loading result-loading">等待识别...</div>
-                }
-
-
-                 {((results[currentIndex] != null && !isEditing) || isStreaming) && ! (isLoading && !isStreaming && results[currentIndex] == null && !isEditing) && (
-                    <div className="result-text">
-                      <div className="result-header">
-                        <span aria-live="polite">
-                            第 {currentIndex + 1} 张图片的识别结果 {isStreaming ? '(识别中...)' : ''}
-                        </span>
-                         {results[currentIndex] != null && !isStreaming && !isEditing && (
-                            <div style={{ display: 'flex', gap: '8px'}}>
-                                <button className="edit-button" onClick={handleEditClick}>编辑</button>
-                                <button className="copy-button view-copy-button" onClick={handleCopyText}>复制内容</button>
-                            </div>
-                         )}
-                      </div>
-                       <div className="gradient-text">
-                         <ReactMarkdown
-                           remarkPlugins={[remarkMath]}
-                           rehypePlugins={[rehypeKatex]}
-                           components={{
-                             table: ({ node, ...props }) => (<div style={{ overflowX: 'auto', maxWidth: '100%' }}><table className="markdown-table" {...props} /></div>),
-                             th: ({ node, ...props }) => (<th className="markdown-th" {...props} />),
-                             td: ({ node, ...props }) => (<td className="markdown-td" {...props} />),
-                           }}
-                         >
-                           {isStreaming ? streamingText : (results[currentIndex] || '')}
-                         </ReactMarkdown>
-                       </div>
-                    </div>
-                 )}
-
-                {isEditing && (
+                )}
+                
+                {(results[currentIndex] != null || isStreaming) ? (
                     <div className="result-text editing-area">
                          <div className="result-header">
-                            <span>编辑第 {currentIndex + 1} 张图片的结果</span>
-                            <div>
-                                <button className="save-button" onClick={handleSaveEdit}>保存</button>
-                                <button className="cancel-button" onClick={handleCancelEdit}>取消</button>
-                                 <button className="copy-button edit-copy-button" onClick={handleCopyText}>复制编辑内容</button>
-                            </div>
+                            <span aria-live="polite">
+                                第 {currentIndex + 1} 张图片的识别结果 {isStreaming ? '(识别中...)' : ''}
+                            </span>
+                             {results[currentIndex] != null && !isStreaming && (
+                                <div style={{ display: 'flex', gap: '8px'}}>
+                                    <button className="copy-button" onClick={handleCopyText}>复制内容</button>
+                                </div>
+                             )}
                         </div>
                         <div
                             ref={editDivRef}
-                            contentEditable={true}
+                            contentEditable={!isStreaming}
                             className="edit-content-editable"
                             onInput={handleInput}
                             suppressContentEditableWarning={true}
@@ -805,10 +751,10 @@ function App() {
                             spellCheck="false"
                         />
                     </div>
-                )}
-
-                {!isLoading && !isStreaming && results[currentIndex] == null && !isEditing && images.length > 0 && (
+                ) : (
+                  !isLoading && images.length > 0 && (
                     <div className="result-placeholder">当前图片无识别结果或识别失败。</div>
+                  )
                 )}
             </div>
           </div>
