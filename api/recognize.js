@@ -79,7 +79,7 @@ const ADVANCED_PROMPT = `
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const PROCESS_TIMEOUT = 200000; 
+const PROCESS_TIMEOUT = 240 * 1000; // 240秒 = 240,000毫秒 
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
