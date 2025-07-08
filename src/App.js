@@ -150,36 +150,81 @@ function App() {
           });
           const imagePart = await fileToGenerativePart(file);
           const rulesPrompt = `
-          You are a professional OCR assistant. Please recognize the text content in the image and output it, adhering to the following specifications and requirements:
-          1.  **Mathematical Formula Specification:**
-              * Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
-              * Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
-              * Preserve the original variable names.
-          2.  **Table Specification:**
-              * If the image contains content resembling a "table", please output it using standard Markdown table syntax. For example:
-                  | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
-                  |---------------|---------|-------|----------|
-                  | Copy Writing  | $50/hr  | 4     | $200.00  |
-                  | Website Design| $50/hr  | 2     | $100.00  |
-              * Separate the header row from the content rows using a separator line (e.g., |---|---|). Ensure each column's separator has at least three hyphens (-) for alignment.
-              * Monetary amounts should include the currency symbol and decimal points (if present in the original).
-              * If a table is recognized, do not ignore the text outside the table.
-          3.  **Paragraph Requirements:**
-              * Separate each paragraph with two newline characters to ensure correct paragraph rendering in Markdown.
-          4.  **Text Recognition Requirements:**
-              * Do not omit any text.
-              * Try to maintain the original paragraph structure and general layout (like indentation, but prioritize standard Markdown formatting).
-              * Accurately recognize professional terminology and specific nouns.
-              * Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists; do not apply any Markdown list formatting that isn't explicitly indicated in the original text.
-          5.  **Identifying and Marking Uncertainties:**
-                * Recognize all text in the image.
-                * For text or words that you are uncertain about recognizing or might have recognized incorrectly due to image blurriness, illegible handwriting, or other reasons, please mark them using **bold** formatting.
-          6.  **Contextual Proofreading and Correction:**
-              * After recognition is complete, please carefully review the text content.
-              * Use contextual information to correct potential typos, spelling errors, or obvious grammatical mistakes in the recognition results.
-              * Mark the words or phrases you have corrected using *italic* formatting to clearly show the modifications.
-          7.  **Output Requirements:**
-              * Directly output the processed content without adding any explanations, preambles, or summaries.
+          ## Processing Workflow Explanation
+          1. Perform initial OCR recognition → Mark low-confidence characters
+          2. Conduct semantic analysis → Correct obvious errors
+          3. Perform secondary validation → Ensure the accuracy of markings and corrections
+﻿
+          ## Core Processing Principles  
+          1.  **Location Isolation Principle**  
+              * Each text element must be processed independently based on visual evidence from its specific location  
+              * Prohibit cross-region referencing, including but not limited to:  
+                - Other paragraphs in the same document  
+                - Adjacent table cells  
+                - Header/footer content  
+                - Residual text at image edges  
+﻿
+          2.  **Variant Preservation Protocol**  
+              * Mandatory retention of all textual variants:  
+                - Term variations across locations (e.g., "豪享版" vs "豪华版")  
+                - Case inconsistencies (e.g., "iPhone" vs "IPHONE")  
+                - Format variants (e.g., "图1-1" vs "图1.1")  
+                - Spelling variants (e.g., "登录/login" vs "登陆/landing")  
+              * Implementation examples:  
+                ✓ Preserve both "甲方/Party A" and "甲方：/Party A:" in contracts  
+                ✓ Maintain alternating "WiFi" and "Wifi" in technical documents  
+                ✓ Retain mixed "ID" and "Id" usage within the same table  
+
+          3.  **Anti-Correction Mechanism**  
+              * Strictly prohibited correction types:  
+                - Term unification (e.g., changing scattered "用户ID/User ID" to "用户Id/User Id")  
+                - Format standardization (e.g., converting "2023年1月1日/Jan 1, 2023" to "2023-01-01")  
+                - Synonym substitution (e.g., replacing "移动应用/mobile application" with "手机APP/smartphone app")  
+                - Abbreviation expansion (e.g., expanding "北大/Beida" to "北京大学/Peking University")  
+﻿
+          ## Adhere to the following standards and requirements:
+          1.  **Mathematical Formula Standards:**
+              *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
+              *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+              *   Keep variable names from the original text unchanged
+
+          2.  **Table Standards:**
+              *   If the image contains table-like content, use standard Markdown table syntax for output. For example:
+                | DESCRIPTION   | RATE    | HOURS | AMOUNT   |
+                |---------------|---------|-------|----------|
+                | Copy Writing  | $50/hr  | 4     | $200.00  |
+                | Website Design| $50/hr  | 2     | $100.00  |
+              *   Separate headers and cells with "|-" lines, with at least three "-" per column for alignment.
+              *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
+              *   If a table is identified, do not ignore the text outside of it.
+
+          3.  **Text Recognition Requirements:**
+              *   Do not omit any text.
+              *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
+              *   Technical terms and proper nouns must be accurately recognized.
+              *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
+
+          4.  **Identifying and Marking Uncertain Items:**
+              *   For the following situations, **bold** marking must be used:
+                  - Characters with unclear outlines due to messy handwriting
+                  - Characters with broken strokes or interference from stains/smudges
+                  - Instances where similar characters are difficult to distinguish (e.g., "未" vs. "末")
+                  - Recognition results with a confidence score below 85%
+              *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
+              *   For handwritten text, apply a more lenient marking strategy: **bold** any character with blurred or ambiguous strokes.
+
+          5.  **Contextual Proofreading and Correction:**
+              *   Only correct errors that meet the following criteria:
+                  - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
+                  - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
+                  - Contradictions of common sense or logical inconsistencies (e.g., "the sun rises in the *west*")
+              *   Must ensure the corrected content is semantically coherent within the context.
+              *   Make corrections if and only if the confidence in the correction is >90%.
+              *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
+              *   Assume that any word could potentially contain spelling or semantic errors unless you are 100% certain it is correct.
+
+          6.  **Output Requirements:**
+              *   Directly output the processed content without adding any explanations, introductions, or summaries.
           `;
           const result = await model.generateContentStream([rulesPrompt, imagePart]);
 
@@ -639,10 +684,7 @@ function App() {
         <p>
             <b>基于Gemini视觉API的智能文字识别解决方案，可精准识别多语言印刷体、手写体文字、表格等。</b>
             <br />
-            识别出的表格是 Markdown 格式，请到{' '}
-            <a href="https://tableconvert.com/zh-cn/markdown-to-markdown" target="_blank" rel="noopener noreferrer">
-            这里
-            </a> 在线转换。
+            识别出的表格请在编辑框内手动复制，粘贴至 Excel 即可保留格式使用。
         </p>
       </header>
 
