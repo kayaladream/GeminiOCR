@@ -593,7 +593,10 @@ function App() {
             .replace(/`(.*?)`/g, '$1')
             .replace(/~~(.*?)~~/g, '$1')
             .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n{2,}/g, '\n');
+            .replace(/\n{2,}/g, '\n')
+            .replace(/^.*(\|.*){3,}.*$/gm, (match) => {
+                return match.replace(/\|/g, '') ;
+            })
 
         navigator.clipboard.writeText(plainText.trim())
             .then(() => {
@@ -684,7 +687,7 @@ function App() {
         <p>
             <b>基于Gemini视觉API的智能文字识别解决方案，可精准识别多语言印刷体、手写体文字、表格等。</b>
             <br />
-            使用“复制内容”按钮可自动清除富文本格式；表格需在编辑框内手动复制→粘贴至 Excel 以保留格式。
+            识别出的表格需在编辑框内手动复制→粘贴至 Excel 以保留格式。
         </p>
       </header>
 
