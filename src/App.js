@@ -593,7 +593,8 @@ function App() {
             .replace(/`(.*?)`/g, '$1')
             .replace(/~~(.*?)~~/g, '$1')
             .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n{2,}/g, '\n')
+            // 【重要】这里将多个换行符压缩成一个，实现“无空行”效果
+            .replace(/\n{2,}/g, '\n') 
 
         navigator.clipboard.writeText(plainText.trim())
             .then(() => {
@@ -642,6 +643,24 @@ function App() {
       });
   };
 
+  // ====================== 【新增修改点 1】 ======================
+  // 新增 handleManualCopy 方法，用于处理手动复制事件
+  const handleManualCopy = (e) => {
+    // 获取用户在页面上选择的文本
+    const selectedText = window.getSelection().toString();
+    
+    // 浏览器从 contentEditable div 复制时，<p>标签间的换行可能变成3个或更多 \n
+    // 这里将3个及以上的连续换行符统一替换为2个换行符（即保留一个空行）
+    const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
+    
+    // 将处理后的文本放入剪贴板
+    e.clipboardData.setData('text/plain', normalizedText);
+    
+    // 阻止浏览器默认的复制行为
+    e.preventDefault();
+  };
+  // ==========================================================
+
   useEffect(() => {
       if (isStreaming) {
           // During streaming, we show the ReactMarkdown component, not the editor.
@@ -654,9 +673,6 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
-          // Only update the editor's HTML if the content is different.
-          // This prevents the cursor from jumping to the end on every keystroke.
-          // This logic is crucial for a good editing experience.
           if (editorMarkdown !== currentMarkdown) {
               const rawHtml = marked.parse(currentMarkdown, { breaks: true });
               const safeHtml = DOMPurify.sanitize(rawHtml);
@@ -790,15 +806,19 @@ function App() {
                                 <button className="copy-button" onClick={handleCopyText}>复制内容</button>
                             </div>
                         </div>
+                        {/* ====================== 【新增修改点 2】 ====================== */}
+                        {/* 在可编辑 div 上添加 onCopy 事件处理器 */}
                         <div
                             ref={editDivRef}
                             contentEditable={true}
                             className="edit-content-editable"
                             onInput={handleInput}
+                            onCopy={handleManualCopy} 
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
                             spellCheck="false"
                         />
+                        {/* ========================================================== */}
                     </div>
                 )}
 
