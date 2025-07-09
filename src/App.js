@@ -642,6 +642,8 @@ function App() {
       });
   };
 
+  // ====================== 【最终完美版智能复制处理器】 ======================
+  // 核心思想：先在 DOM 层面清理格式，再生成最终的 HTML 字符串
   const handleManualCopy = (e) => {
     e.preventDefault();
 
@@ -650,22 +652,31 @@ function App() {
         return;
     }
 
+    // --- Part 1: 处理纯文本 (text/plain) ---
     const selectedText = selection.toString();
     const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
     e.clipboardData.setData('text/plain', normalizedText);
 
+    // --- Part 2: 处理富文本 (text/html) ---
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const div = document.createElement('div');
     div.appendChild(fragment);
 
-    let htmlContent = div.innerHTML;
+    // 【关键修改】使用 DOM 操作移除格式标签，这比正则表达式更可靠
+    // 尤其是在处理表格等复杂或不完整的 HTML 片段时。
+    const formattingTags = div.querySelectorAll('strong, b, em, i');
 
-    const cleanHtml = htmlContent.replace(/<\/?(strong|b|em|i)\b[^>]*>/g, '');
+    formattingTags.forEach(tag => {
+      // "Unwrap" the tag: a.k.a. replace the tag with its content.
+      // The spread operator (...) handles cases where a tag might contain multiple nodes (e.g., text and other elements).
+      tag.replaceWith(...tag.childNodes);
+    });
     
-    e.clipboardData.setData('text/html', cleanHtml);
+    // 将清理过的 DOM 结构转换成 HTML 字符串，并写入剪贴板
+    e.clipboardData.setData('text/html', div.innerHTML);
   };
-  // =======================================================================
+  // ========================================================================
 
   useEffect(() => {
       if (isStreaming) {
