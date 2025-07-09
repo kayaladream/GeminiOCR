@@ -673,25 +673,24 @@ function App() {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
           if (editorMarkdown !== currentMarkdown) {
-              // 1. 将 Markdown 转换为基础 HTML (<p>段落1</p><p>段落2</p>)
+              // 1. 将 Markdown 转换为 HTML，使用 <p> 标签分隔段落
               let rawHtml = marked.parse(currentMarkdown, { breaks: true });
 
-              // 2. 【核心修改】将段落间的</p><p>替换为两个<br>标签。
-              // 这会把 <p>A</p><p>B</p> 变成 <p>A<br><br>B</p>
-              rawHtml = rawHtml.replace(/<\/p>\s*<p>/g, '<br><br>');
+              // 2. 将段落之间的 </p><p> 替换为 <br><br>
+              // 这是实现“手动复制带一个空行”的关键
+              // 浏览器复制 <br><br> 时会产生 `\n\n`，正好形成一个空行
+              rawHtml = rawHtml.replace(/<\/p><p>/g, '<br><br>');
 
-              // 3. 【关键修正】移除包裹在最外层的<p>和</p>标签。
-              // 这会把 <p>A<br><br>B</p> 变成 A<br><br>B。
-              // 这种纯粹由<br>分隔的结构在手动复制时，会正确地产生一个空行。
-              if (rawHtml.startsWith('<p>') && rawHtml.endsWith('</p>')) {
-                  rawHtml = rawHtml.substring(3, rawHtml.length - 4);
+              // 3. 移除最外层的 <p> 和 </p> 标签，因为它们现在是多余的
+              if (rawHtml.startsWith('<p>')) {
+                  rawHtml = rawHtml.slice(3);
+              }
+              if (rawHtml.endsWith('</p>')) {
+                  rawHtml = rawHtml.slice(0, -4);
               }
               
-              // 4. 清理并设置最终的HTML
-              const safeHtml = DOMPurify.sanitize(rawHtml, {
-                  // 明确允许<br>标签，以防被默认配置过滤
-                  USE_PROFILES: { html: true } 
-              });
+              // 4. 清理并设置 HTML
+              const safeHtml = DOMPurify.sanitize(rawHtml);
               editDivRef.current.innerHTML = safeHtml;
           }
       }
