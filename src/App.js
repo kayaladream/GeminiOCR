@@ -585,6 +585,11 @@ function App() {
     setShowModal(false);
   };
 
+  const stripFormatting = (htmlString) => {
+    if (!htmlString) return '';
+    return htmlString.replace(/<\/?(strong|b|em|i)>/g, '');
+  };
+
   const handleCopy = (e) => {
     e.preventDefault();
     const selection = window.getSelection();
@@ -594,24 +599,26 @@ function App() {
     const div = document.createElement('div');
     div.appendChild(fragment);
 
-    const html = div.innerHTML;
-    const plainText = div.innerText;
+    const rawHtml = div.innerHTML;
+    const cleanHtml = stripFormatting(rawHtml);
+    const plainText = turndownService.turndown(cleanHtml).trim();
 
-    e.clipboardData.setData('text/html', html);
+    e.clipboardData.setData('text/html', cleanHtml);
     e.clipboardData.setData('text/plain', plainText);
   };
 
   const handleCopyText = async () => {
     if (editDivRef.current && !isStreaming) {
       try {
-        const htmlContent = editDivRef.current.innerHTML;
-        let textContent = editDivRef.current.innerText;
-
-        textContent = textContent.replace(/\n{2,}/g, '\n');
+        const rawHtml = editDivRef.current.innerHTML;
+        const cleanHtml = stripFormatting(rawHtml);
+        
+        let plainText = turndownService.turndown(cleanHtml);
+        plainText = plainText.replace(/\n{2,}/g, '\n').trim();
 
         const clipboardItem = new ClipboardItem({
-          'text/html': new Blob([htmlContent], { type: 'text/html' }),
-          'text/plain': new Blob([textContent], { type: 'text/plain' })
+          'text/html': new Blob([cleanHtml], { type: 'text/html' }),
+          'text/plain': new Blob([plainText], { type: 'text/plain' })
         });
 
         await navigator.clipboard.write([clipboardItem]);
@@ -698,7 +705,7 @@ function App() {
         <p>
             <b>基于Gemini视觉API的智能文字识别解决方案，可精准识别多语言印刷体、手写体文字、表格等。</b>
             <br />
-            <br />
+            识别出的表格需在编辑框内手动复制，粘贴至 Excel 即可保留格式使用。
         </p>
       </header>
 
