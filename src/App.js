@@ -585,16 +585,11 @@ function App() {
     setShowModal(false);
   };
 
-  // ====================== 【修改点 1: 按钮复制逻辑】 ======================
   const handleCopyText = () => {
     if (editText != null && !isStreaming) {
-        // 按照您的要求，只移除粗体和斜体，并压缩换行符
         const plainText = editText
-            // 先剔除双星号或双下划线包裹的粗体
             .replace(/(\*\*|__)(.*?)\1/g, '$2')
-            // 再剔除单星号或单下划线包裹的斜体
             .replace(/(\*|_)(.*?)\1/g, '$2')
-            // 将多个换行符压缩成一个，实现段落间无空行
             .replace(/\n{2,}/g, '\n');
 
         navigator.clipboard.writeText(plainText.trim())
@@ -621,7 +616,6 @@ function App() {
             });
     }
 };
-  // ====================================================================
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
   const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
@@ -645,7 +639,7 @@ function App() {
       });
   };
 
-  // ====================== 【修改点 2: 手动复制逻辑】 ======================
+  // ====================== 【最终版：手动复制处理器】 ======================
   const handleManualCopy = (e) => {
     e.preventDefault();
 
@@ -654,31 +648,45 @@ function App() {
         return;
     }
 
-    // 1. 处理纯文本，保持换行逻辑不变
+    // 1) 处理纯文本：去除 **…** 和 *…* 标记，再压缩多余换行
     const selectedText = selection.toString();
-    const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
+    const normalizedText = selectedText
+        .replace(/(\*\*|__)(.*?)\1/g, '$2')
+        .replace(/(\*|_)(.*?)\1/g, '$2')
+        .replace(/\n{3,}/g, '\n\n');
     e.clipboardData.setData('text/plain', normalizedText);
 
-    // 2. 处理HTML，移除粗体和斜体标签
+    // 2) 处理HTML：克隆选区内容进行修改
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const div = document.createElement('div');
     div.appendChild(fragment);
 
-    // 移除所有粗体(strong, b)和斜体(em, i)标签，但保留其内容
+    // 3) 移除 <strong>/<b>/<em>/<i> 标签
     div.querySelectorAll('strong, b, em, i').forEach(node => {
       const parent = node.parentNode;
-      // 将node的所有子节点移动到node的前面
       while (node.firstChild) {
         parent.insertBefore(node.firstChild, node);
       }
-      // 移除现在已经为空的node标签
       parent.removeChild(node);
+    });
+
+    // 4) 把所有 <th> 替换成 <td>，避免默认“表头粗体”
+    div.querySelectorAll('th').forEach(th => {
+      const td = document.createElement('td');
+      while (th.firstChild) {
+        td.appendChild(th.firstChild);
+      }
+      for (let i = 0; i < th.attributes.length; i++) {
+        const attr = th.attributes[i];
+        td.setAttribute(attr.name, attr.value);
+      }
+      th.parentNode.replaceChild(td, th);
     });
     
     e.clipboardData.setData('text/html', div.innerHTML);
   };
-  // ====================================================================
+  // =======================================================================
 
   useEffect(() => {
       if (isStreaming) {
