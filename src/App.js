@@ -597,43 +597,46 @@ function App() {
     div.appendChild(fragment.cloneNode(true));
     
     const html = div.innerHTML;
-    const plainText = div.innerText.replace(/\n{2,}/g, '\n\n').trim();
+    const plainText = div.innerText;
 
     e.clipboardData.setData('text/html', html);
     e.clipboardData.setData('text/plain', plainText);
   };
 
-  const handleCopyText = () => {
+  const handleCopyText = async () => {
     if (editDivRef.current && !isStreaming) {
-      const range = document.createRange();
-      range.selectNodeContents(editDivRef.current);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      
       try {
-        document.execCommand('copy');
-      } catch (err) {
-        console.error('无法通过 execCommand 复制:', err);
-        alert('自动复制失败，请手动 Ctrl+C 复制。');
-      }
-      
-      selection.removeAllRanges();
+        const htmlContent = editDivRef.current.innerHTML;
+        const plainTextWithNoExtraLines = editDivRef.current.innerText.replace(/\n{2,}/g, '\n');
 
-      const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
-      if (button) {
-          const originalText = button.dataset.originalText || button.textContent;
-          button.dataset.originalText = originalText;
-          button.textContent = '已复制';
-          button.classList.add('copied');
-          setTimeout(() => {
-              const currentButton = document.querySelector('.copy-button.copied');
-              if (currentButton && currentButton.textContent === '已复制') {
-                  currentButton.textContent = currentButton.dataset.originalText || '复制内容';
-                  currentButton.classList.remove('copied');
-                  delete currentButton.dataset.originalText;
-              }
-          }, 1500);
+        const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+        const plainBlob = new Blob([plainTextWithNoExtraLines], { type: 'text/plain' });
+
+        const clipboardItem = new ClipboardItem({
+            'text/html': htmlBlob,
+            'text/plain': plainBlob,
+        });
+
+        await navigator.clipboard.write([clipboardItem]);
+
+        const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
+        if (button) {
+            const originalText = button.dataset.originalText || button.textContent;
+            button.dataset.originalText = originalText;
+            button.textContent = '已复制';
+            button.classList.add('copied');
+            setTimeout(() => {
+                const currentButton = document.querySelector('.copy-button.copied');
+                if (currentButton && currentButton.textContent === '已复制') {
+                    currentButton.textContent = currentButton.dataset.originalText || '复制内容';
+                    currentButton.classList.remove('copied');
+                    delete currentButton.dataset.originalText;
+                }
+            }, 1500);
+        }
+      } catch (err) {
+        console.error('复制失败:', err);
+        alert('复制失败，您的浏览器可能不支持此操作，请尝试手动复制。');
       }
     }
   };
@@ -749,7 +752,7 @@ function App() {
                <div className="image-navigation">
                 <button onClick={handlePrevImage} disabled={currentIndex === 0 || isLoading || isStreaming} className="nav-button" aria-label="上一张图片">←</button>
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
-                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 ||isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
+                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
               <div className={`image-preview ${isLoading && !results[currentIndex] ? 'loading' : ''}`}>
                 <img
