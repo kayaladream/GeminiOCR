@@ -621,7 +621,25 @@ function App() {
 };
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
-  const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + changeScale; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
+  
+  // ====================== 【已修正拼写错误】 ======================
+  const handleModalWheel = (e) => {
+    e.preventDefault();
+    const zoomSensitivity = 0.0005;
+    const minScale = 0.1;
+    const maxScale = 10;
+    const scaleChange = -e.deltaY * zoomSensitivity * modalScale;
+    setModalScale(prevScale => {
+        let newScale = prevScale + scaleChange; // 修正了 'changeScale' -> 'scaleChange'
+        newScale = Math.max(minScale, Math.min(newScale, maxScale));
+        return newScale;
+    });
+    if (e.currentTarget) {
+        e.currentTarget.style.transition = 'transform 0.1s ease-out';
+    }
+  };
+  // =============================================================
+
   useEffect(() => {
     const handleMove = (e) => { const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; setModalPosition({ x: clientX - modalOffset.x, y: clientY - modalOffset.y, }); };
     const handleEnd = () => { setIsDraggingModal(false); const modalContent = document.querySelector('.modal-content'); if (modalContent) { modalContent.style.cursor = 'grab'; modalContent.style.transition = 'transform 0.1s ease-out'; } };
@@ -642,8 +660,7 @@ function App() {
       });
   };
 
-  // ====================== 【您提供的最终完美方案】 ======================
-  // 采用最可靠的经典 DOM 操作来“解包”格式化标签
+  // ====================== 【最终完美版智能复制处理器】 ======================
   const handleManualCopy = (e) => {
     e.preventDefault();
 
