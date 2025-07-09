@@ -593,7 +593,7 @@ function App() {
             .replace(/`(.*?)`/g, '$1')
             .replace(/~~(.*?)~~/g, '$1')
             .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n{2,}/g, '\n')
+            .replace(/\n{2,}/g, '\n') 
 
         navigator.clipboard.writeText(plainText.trim())
             .then(() => {
@@ -642,37 +642,31 @@ function App() {
       });
   };
 
+  // ====================== 【最终版智能复制处理器】 ======================
   const handleManualCopy = (e) => {
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
+    // 阻止浏览器默认的复制行为，以便我们完全控制剪贴板内容
+    e.preventDefault();
 
-    // 检查选区是否在表格内部
-    const anchorNode = selection.anchorNode;
-    if (anchorNode) {
-        // .closest() 会从当前元素开始向上遍历DOM树，寻找匹配的祖先元素
-        // 我们需要处理节点是元素节点或文本节点两种情况
-        const parentElement = anchorNode.nodeType === Node.ELEMENT_NODE ? anchorNode : anchorNode.parentElement;
-        if (parentElement && parentElement.closest('table')) {
-            // 如果选区在表格内，则不进行任何处理，
-            // 让浏览器执行默认的复制行为，这样可以保留表格的HTML结构。
-            return;
-        }
+    const selection = window.getSelection();
+    if (!selection.rangeCount) {
+        return;
     }
 
-    // --- 如果代码执行到这里，说明不是在复制表格，而是普通文本 ---
-
-    // 获取纯文本
+    // 1) 准备并写入【纯文本】格式 (text/plain)
+    // 这是为记事本等纯文本应用准备的回退选项
     const selectedText = selection.toString();
-
-    // 将三个或更多连续的换行符压缩为两个（即一个空行）
     const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
-
-    // 将处理后的文本放入剪贴板
     e.clipboardData.setData('text/plain', normalizedText);
 
-    // 阻止浏览器对普通文本执行默认的复制操作
-    e.preventDefault();
+    // 2) 准备并写入【HTML】格式 (text/html)
+    // 这是为 Excel、Word 等富文本应用准备的主要选项
+    const range = selection.getRangeAt(0);
+    const fragment = range.cloneContents();
+    const div = document.createElement('div');
+    div.appendChild(fragment);
+    e.clipboardData.setData('text/html', div.innerHTML);
   };
+  // ====================================================================
 
   useEffect(() => {
       if (isStreaming) {
@@ -686,9 +680,6 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
-          // Only update the editor's HTML if the content is different.
-          // This prevents the cursor from jumping to the end on every keystroke.
-          // This logic is crucial for a good editing experience.
           if (editorMarkdown !== currentMarkdown) {
               const rawHtml = marked.parse(currentMarkdown, { breaks: true });
               const safeHtml = DOMPurify.sanitize(rawHtml);
@@ -827,7 +818,7 @@ function App() {
                             contentEditable={true}
                             className="edit-content-editable"
                             onInput={handleInput}
-                            onCopy={handleManualCopy}
+                            onCopy={handleManualCopy} 
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
                             spellCheck="false"
