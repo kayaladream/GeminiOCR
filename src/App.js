@@ -621,25 +621,7 @@ function App() {
 };
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
-  
-  // ====================== 【已修正拼写错误】 ======================
-  const handleModalWheel = (e) => {
-    e.preventDefault();
-    const zoomSensitivity = 0.0005;
-    const minScale = 0.1;
-    const maxScale = 10;
-    const scaleChange = -e.deltaY * zoomSensitivity * modalScale;
-    setModalScale(prevScale => {
-        let newScale = prevScale + scaleChange; // 修正了 'changeScale' -> 'scaleChange'
-        newScale = Math.max(minScale, Math.min(newScale, maxScale));
-        return newScale;
-    });
-    if (e.currentTarget) {
-        e.currentTarget.style.transition = 'transform 0.1s ease-out';
-    }
-  };
-  // =============================================================
-
+  const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
   useEffect(() => {
     const handleMove = (e) => { const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; setModalPosition({ x: clientX - modalOffset.x, y: clientY - modalOffset.y, }); };
     const handleEnd = () => { setIsDraggingModal(false); const modalContent = document.querySelector('.modal-content'); if (modalContent) { modalContent.style.cursor = 'grab'; modalContent.style.transition = 'transform 0.1s ease-out'; } };
@@ -660,8 +642,9 @@ function App() {
       });
   };
 
-  // ====================== 【最终完美版智能复制处理器】 ======================
+  // ====================== 【最终版智能复制处理器】 ======================
   const handleManualCopy = (e) => {
+    // 阻止浏览器默认的复制行为，以便我们完全控制剪贴板内容
     e.preventDefault();
 
     const selection = window.getSelection();
@@ -669,32 +652,21 @@ function App() {
         return;
     }
 
-    // --- Part 1: 处理纯文本 (text/plain) ---
+    // 1) 准备并写入【纯文本】格式 (text/plain)
+    // 这是为记事本等纯文本应用准备的回退选项
     const selectedText = selection.toString();
     const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
     e.clipboardData.setData('text/plain', normalizedText);
 
-    // --- Part 2: 处理富文本 (text/html) ---
+    // 2) 准备并写入【HTML】格式 (text/html)
+    // 这是为 Excel、Word 等富文本应用准备的主要选项
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const div = document.createElement('div');
     div.appendChild(fragment);
-
-    // 【关键】使用您提供的、最可靠的 DOM 解包方法
-    div.querySelectorAll('b, strong, i, em').forEach(node => {
-        const parent = node.parentNode;
-        // 将 node 的所有子节点（文本等）移动到 node 之前
-        while (node.firstChild) {
-            parent.insertBefore(node.firstChild, node);
-        }
-        // 移除现在已经变为空的 node 标签
-        parent.removeChild(node);
-    });
-    
-    // 将最终清理过的 DOM 结构转换成 HTML 字符串
     e.clipboardData.setData('text/html', div.innerHTML);
   };
-  // ========================================================================
+  // ====================================================================
 
   useEffect(() => {
       if (isStreaming) {
