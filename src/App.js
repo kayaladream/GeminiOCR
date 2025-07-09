@@ -585,58 +585,40 @@ function App() {
     setShowModal(false);
   };
 
-  const handleCopy = (e) => {
-    e.preventDefault();
-    const selection = window.getSelection();
-    if (!selection.rangeCount) return;
-
-    const range = selection.getRangeAt(0);
-    const fragment = range.cloneContents();
-    
-    const div = document.createElement('div');
-    div.appendChild(fragment.cloneNode(true));
-    
-    const html = div.innerHTML;
-    const plainText = div.innerText.replace(/\n{2,}/g, '\n\n').trim();
-
-    e.clipboardData.setData('text/html', html);
-    e.clipboardData.setData('text/plain', plainText);
-  };
-
   const handleCopyText = () => {
-    if (editDivRef.current && !isStreaming) {
-      const range = document.createRange();
-      range.selectNodeContents(editDivRef.current);
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      
-      try {
-        document.execCommand('copy');
-      } catch (err) {
-        console.error('无法通过 execCommand 复制:', err);
-        alert('自动复制失败，请手动 Ctrl+C 复制。');
-      }
-      
-      selection.removeAllRanges();
+    if (editText != null && !isStreaming) {
+        const plainText = editText
+            .replace(/\*\*(.*?)\*\*/g, '$1')
+            .replace(/\*(.*?)\*/g, '$1')
+            .replace(/`(.*?)`/g, '$1')
+            .replace(/~~(.*?)~~/g, '$1')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+            .replace(/\n{2,}/g, '\n')
 
-      const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
-      if (button) {
-          const originalText = button.dataset.originalText || button.textContent;
-          button.dataset.originalText = originalText;
-          button.textContent = '已复制';
-          button.classList.add('copied');
-          setTimeout(() => {
-              const currentButton = document.querySelector('.copy-button.copied');
-              if (currentButton && currentButton.textContent === '已复制') {
-                  currentButton.textContent = currentButton.dataset.originalText || '复制内容';
-                  currentButton.classList.remove('copied');
-                  delete currentButton.dataset.originalText;
-              }
-          }, 1500);
-      }
+        navigator.clipboard.writeText(plainText.trim())
+            .then(() => {
+                const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
+                 if (button) {
+                     const originalText = button.dataset.originalText || button.textContent;
+                     button.dataset.originalText = originalText;
+                     button.textContent = '已复制';
+                     button.classList.add('copied');
+                     setTimeout(() => {
+                         const currentButton = document.querySelector('.copy-button.copied');
+                         if (currentButton && currentButton.textContent === '已复制') {
+                             currentButton.textContent = currentButton.dataset.originalText || '复制内容';
+                             currentButton.classList.remove('copied');
+                             delete currentButton.dataset.originalText;
+                         }
+                     }, 1500);
+                 }
+            })
+            .catch(err => {
+                console.error('复制失败:', err);
+                alert('复制失败，您的浏览器可能不支持或权限不足，请尝试手动复制。');
+            });
     }
-  };
+};
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
   const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
@@ -672,24 +654,11 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
+          // Only update the editor's HTML if the content is different.
+          // This prevents the cursor from jumping to the end on every keystroke.
+          // This logic is crucial for a good editing experience.
           if (editorMarkdown !== currentMarkdown) {
-              // 1. 将 Markdown 转换为 HTML，使用 <p> 标签分隔段落
-              let rawHtml = marked.parse(currentMarkdown, { breaks: true });
-
-              // 2. 将段落之间的 </p><p> 替换为 <br><br>
-              // 这是实现“手动复制带一个空行”的关键
-              // 浏览器复制 <br><br> 时会产生 `\n\n`，正好形成一个空行
-              rawHtml = rawHtml.replace(/<\/p><p>/g, '<br><br>');
-
-              // 3. 移除最外层的 <p> 和 </p> 标签，因为它们现在是多余的
-              if (rawHtml.startsWith('<p>')) {
-                  rawHtml = rawHtml.slice(3);
-              }
-              if (rawHtml.endsWith('</p>')) {
-                  rawHtml = rawHtml.slice(0, -4);
-              }
-              
-              // 4. 清理并设置 HTML
+              const rawHtml = marked.parse(currentMarkdown, { breaks: true });
               const safeHtml = DOMPurify.sanitize(rawHtml);
               editDivRef.current.innerHTML = safeHtml;
           }
@@ -766,7 +735,7 @@ function App() {
                <div className="image-navigation">
                 <button onClick={handlePrevImage} disabled={currentIndex === 0 || isLoading || isStreaming} className="nav-button" aria-label="上一张图片">←</button>
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
-                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 ||isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
+                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
               <div className={`image-preview ${isLoading && !results[currentIndex] ? 'loading' : ''}`}>
                 <img
@@ -826,7 +795,6 @@ function App() {
                             contentEditable={true}
                             className="edit-content-editable"
                             onInput={handleInput}
-                            onCopy={handleCopy}
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
                             spellCheck="false"
