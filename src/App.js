@@ -639,7 +639,6 @@ function App() {
       });
   };
 
-  // ====================== 【最终版：手动复制处理器】 ======================
   const handleManualCopy = (e) => {
     e.preventDefault();
 
@@ -648,7 +647,6 @@ function App() {
         return;
     }
 
-    // 1) 处理纯文本：去除 **…** 和 *…* 标记，再压缩多余换行
     const selectedText = selection.toString();
     const normalizedText = selectedText
         .replace(/(\*\*|__)(.*?)\1/g, '$2')
@@ -656,13 +654,11 @@ function App() {
         .replace(/\n{3,}/g, '\n\n');
     e.clipboardData.setData('text/plain', normalizedText);
 
-    // 2) 处理HTML：克隆选区内容进行修改
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const div = document.createElement('div');
     div.appendChild(fragment);
 
-    // 3) 移除 <strong>/<b>/<em>/<i> 标签
     div.querySelectorAll('strong, b, em, i').forEach(node => {
       const parent = node.parentNode;
       while (node.firstChild) {
@@ -671,7 +667,6 @@ function App() {
       parent.removeChild(node);
     });
 
-    // 4) 把所有 <th> 替换成 <td>，避免默认“表头粗体”
     div.querySelectorAll('th').forEach(th => {
       const td = document.createElement('td');
       while (th.firstChild) {
@@ -686,11 +681,9 @@ function App() {
     
     e.clipboardData.setData('text/html', div.innerHTML);
   };
-  // =======================================================================
 
   useEffect(() => {
       if (isStreaming) {
-          // During streaming, we show the ReactMarkdown component, not the editor.
           return;
       }
   
