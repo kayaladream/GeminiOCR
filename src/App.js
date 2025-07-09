@@ -662,6 +662,7 @@ function App() {
 
   useEffect(() => {
       if (isStreaming) {
+          // During streaming, we show the ReactMarkdown component, not the editor.
           return;
       }
   
@@ -671,9 +672,21 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
+          // Only update the editor's HTML if the content is different.
+          // This prevents the cursor from jumping to the end on every keystroke.
           if (editorMarkdown !== currentMarkdown) {
-              const rawHtml = marked.parse(currentMarkdown, { breaks: true });
-              const safeHtml = DOMPurify.sanitize(rawHtml, { ADD_TAGS: ["table", "thead", "tbody", "tr", "th", "td"], ADD_ATTR: [] });
+              // 1. 将 Markdown 转换为 HTML。
+              let rawHtml = marked.parse(currentMarkdown, { breaks: true });
+
+              // 2.【核心修改】
+              // 将段落标签之间的分隔符 </p><p> 替换为两个 <br> 标签。
+              // 这可以改变浏览器的默认复制行为，将复制时的“两行空行”减少为“一行空行”。
+              // 使用正则表达式 /<\/p>\s*<p>/g 来处理标签之间可能存在的空格或换行。
+              rawHtml = rawHtml.replace(/<\/p>\s*<p>/g, '<br><br>');
+
+              // 3. 清理 HTML 并将其插入到可编辑的 div 中。
+              // DOMPurify 默认允许 <br> 标签，所以这里是安全的。
+              const safeHtml = DOMPurify.sanitize(rawHtml);
               editDivRef.current.innerHTML = safeHtml;
           }
       }
