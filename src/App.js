@@ -621,7 +621,7 @@ function App() {
 };
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
-  const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
+  const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + changeScale; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
   useEffect(() => {
     const handleMove = (e) => { const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; setModalPosition({ x: clientX - modalOffset.x, y: clientY - modalOffset.y, }); };
     const handleEnd = () => { setIsDraggingModal(false); const modalContent = document.querySelector('.modal-content'); if (modalContent) { modalContent.style.cursor = 'grab'; modalContent.style.transition = 'transform 0.1s ease-out'; } };
@@ -642,8 +642,8 @@ function App() {
       });
   };
 
-  // ====================== 【最终完美版智能复制处理器】 ======================
-  // 核心思想：先在 DOM 层面清理格式，再生成最终的 HTML 字符串
+  // ====================== 【您提供的最终完美方案】 ======================
+  // 采用最可靠的经典 DOM 操作来“解包”格式化标签
   const handleManualCopy = (e) => {
     e.preventDefault();
 
@@ -663,17 +663,18 @@ function App() {
     const div = document.createElement('div');
     div.appendChild(fragment);
 
-    // 【关键修改】使用 DOM 操作移除格式标签，这比正则表达式更可靠
-    // 尤其是在处理表格等复杂或不完整的 HTML 片段时。
-    const formattingTags = div.querySelectorAll('strong, b, em, i');
-
-    formattingTags.forEach(tag => {
-      // "Unwrap" the tag: a.k.a. replace the tag with its content.
-      // The spread operator (...) handles cases where a tag might contain multiple nodes (e.g., text and other elements).
-      tag.replaceWith(...tag.childNodes);
+    // 【关键】使用您提供的、最可靠的 DOM 解包方法
+    div.querySelectorAll('b, strong, i, em').forEach(node => {
+        const parent = node.parentNode;
+        // 将 node 的所有子节点（文本等）移动到 node 之前
+        while (node.firstChild) {
+            parent.insertBefore(node.firstChild, node);
+        }
+        // 移除现在已经变为空的 node 标签
+        parent.removeChild(node);
     });
     
-    // 将清理过的 DOM 结构转换成 HTML 字符串，并写入剪贴板
+    // 将最终清理过的 DOM 结构转换成 HTML 字符串
     e.clipboardData.setData('text/html', div.innerHTML);
   };
   // ========================================================================
