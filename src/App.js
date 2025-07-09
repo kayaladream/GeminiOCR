@@ -585,60 +585,58 @@ function App() {
     setShowModal(false);
   };
 
-  const handleCopyText = async () => {
+  const handleCopy = (e) => {
+    e.preventDefault();
+    const selection = window.getSelection();
+    if (!selection.rangeCount) return;
+
+    const range = selection.getRangeAt(0);
+    const fragment = range.cloneContents();
+    
+    const div = document.createElement('div');
+    div.appendChild(fragment.cloneNode(true));
+    
+    const html = div.innerHTML;
+    const plainText = div.innerText.replace(/\n{2,}/g, '\n\n').trim();
+
+    e.clipboardData.setData('text/html', html);
+    e.clipboardData.setData('text/plain', plainText);
+  };
+
+  const handleCopyText = () => {
     if (editDivRef.current && !isStreaming) {
-        try {
-            const htmlContent = editDivRef.current.innerHTML;
-            const textContent = editDivRef.current.innerText;
-            const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
-            const clipboardItem = new ClipboardItem({
-                'text/html': htmlBlob,
-                'text/plain': new Blob([textContent], { type: 'text/plain' })
-            });
+      const range = document.createRange();
+      range.selectNodeContents(editDivRef.current);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('无法通过 execCommand 复制:', err);
+        alert('自动复制失败，请手动 Ctrl+C 复制。');
+      }
+      
+      selection.removeAllRanges();
 
-            await navigator.clipboard.write([clipboardItem]);
-
-            const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
-            if (button) {
-                const originalText = button.dataset.originalText || button.textContent;
-                button.dataset.originalText = originalText;
-                button.textContent = '已复制';
-                button.classList.add('copied');
-                setTimeout(() => {
-                    const currentButton = document.querySelector('.copy-button.copied');
-                    if (currentButton && currentButton.textContent === '已复制') {
-                        currentButton.textContent = currentButton.dataset.originalText || '复制内容';
-                        currentButton.classList.remove('copied');
-                        delete currentButton.dataset.originalText;
-                    }
-                }, 1500);
-            }
-        } catch (err) {
-            console.error('复制富文本失败，尝试回退到纯文本复制:', err);
-            try {
-                await navigator.clipboard.writeText(editDivRef.current.innerText);
-                const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
-                if (button) {
-                    const originalText = button.dataset.originalText || button.textContent;
-                    button.dataset.originalText = originalText;
-                    button.textContent = '已复制';
-                    button.classList.add('copied');
-                    setTimeout(() => {
-                        const currentButton = document.querySelector('.copy-button.copied');
-                        if (currentButton && currentButton.textContent === '已复制') {
-                           currentButton.textContent = currentButton.dataset.originalText || '复制内容';
-                           currentButton.classList.remove('copied');
-                           delete currentButton.dataset.originalText;
-                        }
-                    }, 1500);
-                }
-            } catch (fallbackErr) {
-                console.error('纯文本复制也失败了:', fallbackErr);
-                alert('复制失败，您的浏览器可能不支持或权限不足，请尝试手动复制。');
-            }
-        }
+      const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
+      if (button) {
+          const originalText = button.dataset.originalText || button.textContent;
+          button.dataset.originalText = originalText;
+          button.textContent = '已复制';
+          button.classList.add('copied');
+          setTimeout(() => {
+              const currentButton = document.querySelector('.copy-button.copied');
+              if (currentButton && currentButton.textContent === '已复制') {
+                  currentButton.textContent = currentButton.dataset.originalText || '复制内容';
+                  currentButton.classList.remove('copied');
+                  delete currentButton.dataset.originalText;
+              }
+          }, 1500);
+      }
     }
-};
+  };
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
   const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
@@ -700,7 +698,7 @@ function App() {
         <p>
             <b>基于Gemini视觉API的智能文字识别解决方案，可精准识别多语言印刷体、手写体文字、表格等。</b>
             <br />
-            识别出的表格需在编辑框内手动复制，粘贴至 Excel 即可保留格式使用。
+             
         </p>
       </header>
 
@@ -751,7 +749,7 @@ function App() {
                <div className="image-navigation">
                 <button onClick={handlePrevImage} disabled={currentIndex === 0 || isLoading || isStreaming} className="nav-button" aria-label="上一张图片">←</button>
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
-                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
+                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 ||isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
               <div className={`image-preview ${isLoading && !results[currentIndex] ? 'loading' : ''}`}>
                 <img
@@ -811,6 +809,7 @@ function App() {
                             contentEditable={true}
                             className="edit-content-editable"
                             onInput={handleInput}
+                            onCopy={handleCopy}
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
                             spellCheck="false"
