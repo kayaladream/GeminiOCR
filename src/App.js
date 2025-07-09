@@ -642,9 +642,7 @@ function App() {
       });
   };
 
-  // ====================== 【最终版智能复制处理器】 ======================
   const handleManualCopy = (e) => {
-    // 阻止浏览器默认的复制行为，以便我们完全控制剪贴板内容
     e.preventDefault();
 
     const selection = window.getSelection();
@@ -652,21 +650,22 @@ function App() {
         return;
     }
 
-    // 1) 准备并写入【纯文本】格式 (text/plain)
-    // 这是为记事本等纯文本应用准备的回退选项
     const selectedText = selection.toString();
     const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
     e.clipboardData.setData('text/plain', normalizedText);
 
-    // 2) 准备并写入【HTML】格式 (text/html)
-    // 这是为 Excel、Word 等富文本应用准备的主要选项
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const div = document.createElement('div');
     div.appendChild(fragment);
-    e.clipboardData.setData('text/html', div.innerHTML);
+
+    let htmlContent = div.innerHTML;
+
+    const cleanHtml = htmlContent.replace(/<\/?(strong|b|em|i)\b[^>]*>/g, '');
+    
+    e.clipboardData.setData('text/html', cleanHtml);
   };
-  // ====================================================================
+  // =======================================================================
 
   useEffect(() => {
       if (isStreaming) {
