@@ -587,7 +587,12 @@ function App() {
 
   const stripFormatting = (htmlString) => {
     if (!htmlString) return '';
-    return htmlString.replace(/<\/?(strong|b|em|i)>/g, '');
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = htmlString;
+    tempDiv.querySelectorAll('strong, b, em, i').forEach(el => {
+        el.outerHTML = el.innerHTML;
+    });
+    return tempDiv.innerHTML;
   };
 
   const handleCopy = (e) => {
@@ -596,12 +601,14 @@ function App() {
     if (!selection.rangeCount) return;
 
     const fragment = selection.getRangeAt(0).cloneContents();
-    const div = document.createElement('div');
-    div.appendChild(fragment);
+    const tempDiv = document.createElement('div');
+    tempDiv.appendChild(fragment);
 
-    const rawHtml = div.innerHTML;
-    const cleanHtml = stripFormatting(rawHtml);
-    const plainText = turndownService.turndown(cleanHtml).trim();
+    const cleanHtml = stripFormatting(tempDiv.innerHTML);
+    
+    const plainTextDiv = document.createElement('div');
+    plainTextDiv.innerHTML = cleanHtml;
+    const plainText = plainTextDiv.innerText;
 
     e.clipboardData.setData('text/html', cleanHtml);
     e.clipboardData.setData('text/plain', plainText);
@@ -613,7 +620,9 @@ function App() {
         const rawHtml = editDivRef.current.innerHTML;
         const cleanHtml = stripFormatting(rawHtml);
         
-        let plainText = turndownService.turndown(cleanHtml);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = cleanHtml;
+        let plainText = tempDiv.innerText;
         plainText = plainText.replace(/\n{2,}/g, '\n').trim();
 
         const clipboardItem = new ClipboardItem({
