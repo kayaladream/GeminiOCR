@@ -593,7 +593,7 @@ function App() {
             .replace(/`(.*?)`/g, '$1')
             .replace(/~~(.*?)~~/g, '$1')
             .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n{2,}/g, '\n')
+            .replace(/\n{2,}/g, '\n') 
 
         navigator.clipboard.writeText(plainText.trim())
             .then(() => {
@@ -642,24 +642,46 @@ function App() {
       });
   };
 
+  // ====================== 【升级后的智能复制处理器】 ======================
   const handleManualCopy = (e) => {
-    // 获取用户在 div 中选中的内容
     const selection = window.getSelection();
-    if (!selection.rangeCount) return;
+    if (!selection.rangeCount) {
+      return; // 如果没有选择任何内容，则不执行任何操作
+    }
 
-    // 获取纯文本，浏览器在复制时会自动在 <p> 标签间加入换行符
+    const range = selection.getRangeAt(0);
+    const commonAncestor = range.commonAncestorContainer;
+
+    // 检查选区的共同祖先节点或其父节点是否在 <table> 元素内部
+    // .closest() 会从当前元素开始向上查找，直到找到匹配的祖先或到达根节点
+    const isCopyingFromTable = (
+      commonAncestor.nodeType === Node.ELEMENT_NODE 
+        ? commonAncestor 
+        : commonAncestor.parentNode
+    ).closest('table');
+    
+    // 如果正在从表格中复制，则不执行任何自定义逻辑，
+    // 让浏览器执行默认的复制行为。这会保留表格的 HTML 结构，
+    // 以便能正确粘贴到 Excel 等应用中。
+    if (isCopyingFromTable) {
+      return; 
+    }
+
+    // --- 只有在复制的不是表格时，才执行以下逻辑 ---
+
+    // 获取用户在页面上选择的纯文本
     const selectedText = selection.toString();
-
-    // 关键：将三个或更多连续的换行符（即两个或更多空行）压缩成两个换行符（即一个空行）
-    // 这能确保段落之间最多只有一个空行
+    
+    // 将3个及以上的连续换行符统一替换为2个换行符（保留一个空行）
     const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
-
+    
     // 将处理后的文本放入剪贴板
     e.clipboardData.setData('text/plain', normalizedText);
-
-    // 阻止浏览器执行默认的复制操作
+    
+    // 阻止浏览器默认的复制行为（因为我们已经自定义了）
     e.preventDefault();
   };
+  // =====================================================================
 
   useEffect(() => {
       if (isStreaming) {
@@ -673,9 +695,6 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
-          // Only update the editor's HTML if the content is different.
-          // This prevents the cursor from jumping to the end on every keystroke.
-          // This logic is crucial for a good editing experience.
           if (editorMarkdown !== currentMarkdown) {
               const rawHtml = marked.parse(currentMarkdown, { breaks: true });
               const safeHtml = DOMPurify.sanitize(rawHtml);
@@ -814,7 +833,7 @@ function App() {
                             contentEditable={true}
                             className="edit-content-editable"
                             onInput={handleInput}
-                            onCopy={handleManualCopy}
+                            onCopy={handleManualCopy} 
                             suppressContentEditableWarning={true}
                             aria-label={`编辑识别结果 ${currentIndex + 1}`}
                             spellCheck="false"
