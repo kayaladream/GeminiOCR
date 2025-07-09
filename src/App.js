@@ -585,38 +585,58 @@ function App() {
     setShowModal(false);
   };
 
-  const handleCopyText = () => {
-    if (editText != null && !isStreaming) {
-        const plainText = editText
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/\*(.*?)\*/g, '$1')
-            .replace(/`(.*?)`/g, '$1')
-            .replace(/~~(.*?)~~/g, '$1')
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n{2,}/g, '\n')
-
-        navigator.clipboard.writeText(plainText.trim())
-            .then(() => {
-                const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
-                 if (button) {
-                     const originalText = button.dataset.originalText || button.textContent;
-                     button.dataset.originalText = originalText;
-                     button.textContent = '已复制';
-                     button.classList.add('copied');
-                     setTimeout(() => {
-                         const currentButton = document.querySelector('.copy-button.copied');
-                         if (currentButton && currentButton.textContent === '已复制') {
-                             currentButton.textContent = currentButton.dataset.originalText || '复制内容';
-                             currentButton.classList.remove('copied');
-                             delete currentButton.dataset.originalText;
-                         }
-                     }, 1500);
-                 }
-            })
-            .catch(err => {
-                console.error('复制失败:', err);
-                alert('复制失败，您的浏览器可能不支持或权限不足，请尝试手动复制。');
+  const handleCopyText = async () => {
+    if (editDivRef.current && !isStreaming) {
+        try {
+            const htmlContent = editDivRef.current.innerHTML;
+            const textContent = editDivRef.current.innerText;
+            const htmlBlob = new Blob([htmlContent], { type: 'text/html' });
+            const clipboardItem = new ClipboardItem({
+                'text/html': htmlBlob,
+                'text/plain': new Blob([textContent], { type: 'text/plain' })
             });
+
+            await navigator.clipboard.write([clipboardItem]);
+
+            const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
+            if (button) {
+                const originalText = button.dataset.originalText || button.textContent;
+                button.dataset.originalText = originalText;
+                button.textContent = '已复制';
+                button.classList.add('copied');
+                setTimeout(() => {
+                    const currentButton = document.querySelector('.copy-button.copied');
+                    if (currentButton && currentButton.textContent === '已复制') {
+                        currentButton.textContent = currentButton.dataset.originalText || '复制内容';
+                        currentButton.classList.remove('copied');
+                        delete currentButton.dataset.originalText;
+                    }
+                }, 1500);
+            }
+        } catch (err) {
+            console.error('复制富文本失败，尝试回退到纯文本复制:', err);
+            try {
+                await navigator.clipboard.writeText(editDivRef.current.innerText);
+                const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
+                if (button) {
+                    const originalText = button.dataset.originalText || button.textContent;
+                    button.dataset.originalText = originalText;
+                    button.textContent = '已复制';
+                    button.classList.add('copied');
+                    setTimeout(() => {
+                        const currentButton = document.querySelector('.copy-button.copied');
+                        if (currentButton && currentButton.textContent === '已复制') {
+                           currentButton.textContent = currentButton.dataset.originalText || '复制内容';
+                           currentButton.classList.remove('copied');
+                           delete currentButton.dataset.originalText;
+                        }
+                    }, 1500);
+                }
+            } catch (fallbackErr) {
+                console.error('纯文本复制也失败了:', fallbackErr);
+                alert('复制失败，您的浏览器可能不支持或权限不足，请尝试手动复制。');
+            }
+        }
     }
 };
 
@@ -644,7 +664,6 @@ function App() {
 
   useEffect(() => {
       if (isStreaming) {
-          // During streaming, we show the ReactMarkdown component, not the editor.
           return;
       }
   
@@ -654,12 +673,9 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
-          // Only update the editor's HTML if the content is different.
-          // This prevents the cursor from jumping to the end on every keystroke.
-          // This logic is crucial for a good editing experience.
           if (editorMarkdown !== currentMarkdown) {
               const rawHtml = marked.parse(currentMarkdown, { breaks: true });
-              const safeHtml = DOMPurify.sanitize(rawHtml);
+              const safeHtml = DOMPurify.sanitize(rawHtml, { ADD_TAGS: ["table", "thead", "tbody", "tr", "th", "td"], ADD_ATTR: [] });
               editDivRef.current.innerHTML = safeHtml;
           }
       }
