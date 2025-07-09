@@ -672,21 +672,26 @@ function App() {
       if (editDivRef.current) {
           const editorMarkdown = turndownService.turndown(editDivRef.current.innerHTML);
           
-          // Only update the editor's HTML if the content is different.
-          // This prevents the cursor from jumping to the end on every keystroke.
           if (editorMarkdown !== currentMarkdown) {
-              // 1. 将 Markdown 转换为 HTML。
+              // 1. 将 Markdown 转换为基础 HTML (<p>段落1</p><p>段落2</p>)
               let rawHtml = marked.parse(currentMarkdown, { breaks: true });
 
-              // 2.【核心修改】
-              // 将段落标签之间的分隔符 </p><p> 替换为两个 <br> 标签。
-              // 这可以改变浏览器的默认复制行为，将复制时的“两行空行”减少为“一行空行”。
-              // 使用正则表达式 /<\/p>\s*<p>/g 来处理标签之间可能存在的空格或换行。
+              // 2. 【核心修改】将段落间的</p><p>替换为两个<br>标签。
+              // 这会把 <p>A</p><p>B</p> 变成 <p>A<br><br>B</p>
               rawHtml = rawHtml.replace(/<\/p>\s*<p>/g, '<br><br>');
 
-              // 3. 清理 HTML 并将其插入到可编辑的 div 中。
-              // DOMPurify 默认允许 <br> 标签，所以这里是安全的。
-              const safeHtml = DOMPurify.sanitize(rawHtml);
+              // 3. 【关键修正】移除包裹在最外层的<p>和</p>标签。
+              // 这会把 <p>A<br><br>B</p> 变成 A<br><br>B。
+              // 这种纯粹由<br>分隔的结构在手动复制时，会正确地产生一个空行。
+              if (rawHtml.startsWith('<p>') && rawHtml.endsWith('</p>')) {
+                  rawHtml = rawHtml.substring(3, rawHtml.length - 4);
+              }
+              
+              // 4. 清理并设置最终的HTML
+              const safeHtml = DOMPurify.sanitize(rawHtml, {
+                  // 明确允许<br>标签，以防被默认配置过滤
+                  USE_PROFILES: { html: true } 
+              });
               editDivRef.current.innerHTML = safeHtml;
           }
       }
