@@ -585,71 +585,55 @@ function App() {
     setShowModal(false);
   };
 
-  const stripFormatting = (htmlString) => {
-    if (!htmlString) return '';
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = htmlString;
-    tempDiv.querySelectorAll('strong, b, em, i').forEach(el => {
-        el.outerHTML = el.innerHTML;
-    });
-    return tempDiv.innerHTML;
-  };
-
   const handleCopy = (e) => {
     e.preventDefault();
     const selection = window.getSelection();
     if (!selection.rangeCount) return;
 
-    const fragment = selection.getRangeAt(0).cloneContents();
-    const tempDiv = document.createElement('div');
-    tempDiv.appendChild(fragment);
-
-    const cleanHtml = stripFormatting(tempDiv.innerHTML);
+    const range = selection.getRangeAt(0);
+    const fragment = range.cloneContents();
     
-    const plainTextDiv = document.createElement('div');
-    plainTextDiv.innerHTML = cleanHtml;
-    const plainText = plainTextDiv.innerText;
+    const div = document.createElement('div');
+    div.appendChild(fragment.cloneNode(true));
+    
+    const html = div.innerHTML;
+    const plainText = div.innerText.replace(/\n{2,}/g, '\n\n').trim();
 
-    e.clipboardData.setData('text/html', cleanHtml);
+    e.clipboardData.setData('text/html', html);
     e.clipboardData.setData('text/plain', plainText);
   };
 
-  const handleCopyText = async () => {
+  const handleCopyText = () => {
     if (editDivRef.current && !isStreaming) {
+      const range = document.createRange();
+      range.selectNodeContents(editDivRef.current);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+      
       try {
-        const rawHtml = editDivRef.current.innerHTML;
-        const cleanHtml = stripFormatting(rawHtml);
-        
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = cleanHtml;
-        let plainText = tempDiv.innerText;
-        plainText = plainText.replace(/\n{2,}/g, '\n').trim();
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('无法通过 execCommand 复制:', err);
+        alert('自动复制失败，请手动 Ctrl+C 复制。');
+      }
+      
+      selection.removeAllRanges();
 
-        const clipboardItem = new ClipboardItem({
-          'text/html': new Blob([cleanHtml], { type: 'text/html' }),
-          'text/plain': new Blob([plainText], { type: 'text/plain' })
-        });
-
-        await navigator.clipboard.write([clipboardItem]);
-
-        const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
-        if (button) {
+      const button = document.querySelector('.copy-button.copied') || document.querySelector('.copy-button');
+      if (button) {
           const originalText = button.dataset.originalText || button.textContent;
           button.dataset.originalText = originalText;
           button.textContent = '已复制';
           button.classList.add('copied');
           setTimeout(() => {
-            const currentButton = document.querySelector('.copy-button.copied');
-            if (currentButton && currentButton.textContent === '已复制') {
-              currentButton.textContent = currentButton.dataset.originalText || '复制内容';
-              currentButton.classList.remove('copied');
-              delete currentButton.dataset.originalText;
-            }
+              const currentButton = document.querySelector('.copy-button.copied');
+              if (currentButton && currentButton.textContent === '已复制') {
+                  currentButton.textContent = currentButton.dataset.originalText || '复制内容';
+                  currentButton.classList.remove('copied');
+                  delete currentButton.dataset.originalText;
+              }
           }, 1500);
-        }
-      } catch (err) {
-        console.error('使用 Clipboard API 复制失败:', err);
-        alert('复制失败，您的浏览器可能不支持或权限不足。');
       }
     }
   };
@@ -765,7 +749,7 @@ function App() {
                <div className="image-navigation">
                 <button onClick={handlePrevImage} disabled={currentIndex === 0 || isLoading || isStreaming} className="nav-button" aria-label="上一张图片">←</button>
                 <span className="image-counter" aria-live="polite">{currentIndex + 1} / {images.length}</span>
-                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 || isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
+                <button onClick={handleNextImage} disabled={currentIndex === images.length - 1 ||isLoading || isStreaming} className="nav-button" aria-label="下一张图片">→</button>
                </div>
               <div className={`image-preview ${isLoading && !results[currentIndex] ? 'loading' : ''}`}>
                 <img
