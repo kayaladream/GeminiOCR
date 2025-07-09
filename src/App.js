@@ -585,15 +585,17 @@ function App() {
     setShowModal(false);
   };
 
+  // ====================== 【修改点 1: 按钮复制逻辑】 ======================
   const handleCopyText = () => {
     if (editText != null && !isStreaming) {
+        // 按照您的要求，只移除粗体和斜体，并压缩换行符
         const plainText = editText
-            .replace(/\*\*(.*?)\*\*/g, '$1')
-            .replace(/\*(.*?)\*/g, '$1')
-            .replace(/`(.*?)`/g, '$1')
-            .replace(/~~(.*?)~~/g, '$1')
-            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
-            .replace(/\n{2,}/g, '\n') 
+            // 先剔除双星号或双下划线包裹的粗体
+            .replace(/(\*\*|__)(.*?)\1/g, '$2')
+            // 再剔除单星号或单下划线包裹的斜体
+            .replace(/(\*|_)(.*?)\1/g, '$2')
+            // 将多个换行符压缩成一个，实现段落间无空行
+            .replace(/\n{2,}/g, '\n');
 
         navigator.clipboard.writeText(plainText.trim())
             .then(() => {
@@ -619,6 +621,7 @@ function App() {
             });
     }
 };
+  // ====================================================================
 
   const handleModalMouseDown = (e) => { if (e.target.classList.contains('modal-close') || e.button !== 0) { return; } const isTouchEvent = e.touches && e.touches.length > 0; const clientX = isTouchEvent ? e.touches[0].clientX : e.clientX; const clientY = isTouchEvent ? e.touches[0].clientY : e.clientY; e.preventDefault(); setIsDraggingModal(true); setModalOffset({ x: clientX - modalPosition.x, y: clientY - modalPosition.y, }); const modalContent = e.currentTarget; if (modalContent) { modalContent.style.cursor = 'grabbing'; modalContent.style.transition = 'none'; } };
   const handleModalWheel = (e) => { e.preventDefault(); const zoomSensitivity = 0.0005; const minScale = 0.1; const maxScale = 10; const scaleChange = -e.deltaY * zoomSensitivity * modalScale; setModalScale(prevScale => { let newScale = prevScale + scaleChange; newScale = Math.max(minScale, Math.min(newScale, maxScale)); return newScale; }); if (e.currentTarget) { e.currentTarget.style.transition = 'transform 0.1s ease-out'; } };
@@ -642,9 +645,8 @@ function App() {
       });
   };
 
-  // ====================== 【最终版智能复制处理器】 ======================
+  // ====================== 【修改点 2: 手动复制逻辑】 ======================
   const handleManualCopy = (e) => {
-    // 阻止浏览器默认的复制行为，以便我们完全控制剪贴板内容
     e.preventDefault();
 
     const selection = window.getSelection();
@@ -652,18 +654,28 @@ function App() {
         return;
     }
 
-    // 1) 准备并写入【纯文本】格式 (text/plain)
-    // 这是为记事本等纯文本应用准备的回退选项
+    // 1. 处理纯文本，保持换行逻辑不变
     const selectedText = selection.toString();
     const normalizedText = selectedText.replace(/\n{3,}/g, '\n\n');
     e.clipboardData.setData('text/plain', normalizedText);
 
-    // 2) 准备并写入【HTML】格式 (text/html)
-    // 这是为 Excel、Word 等富文本应用准备的主要选项
+    // 2. 处理HTML，移除粗体和斜体标签
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const div = document.createElement('div');
     div.appendChild(fragment);
+
+    // 移除所有粗体(strong, b)和斜体(em, i)标签，但保留其内容
+    div.querySelectorAll('strong, b, em, i').forEach(node => {
+      const parent = node.parentNode;
+      // 将node的所有子节点移动到node的前面
+      while (node.firstChild) {
+        parent.insertBefore(node.firstChild, node);
+      }
+      // 移除现在已经为空的node标签
+      parent.removeChild(node);
+    });
+    
     e.clipboardData.setData('text/html', div.innerHTML);
   };
   // ====================================================================
