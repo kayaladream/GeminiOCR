@@ -32,9 +32,10 @@ https://ocr.lark.nyc.mn
 `GEMINI_API_KEY`
 
 **Fork 方案，支持更新**
-1. 先点击 [Fork 原项目](https://github.com/kayaladream/GeminiOCR/fork)  
+1. 先点击 GitHub 仓库右上角的 Fork 按钮，或 [点我](https://github.com/kayaladream/GeminiOCR/fork)  
 2. 然后点击下方按钮部署 **你的 Fork 仓库**：
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
+   
+    [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 
 **注意：将Vercel的“函数最大持续时间”调整为300秒，以确保Gemini API有足够的处理时间，避免因超时而中断请求。**
 
