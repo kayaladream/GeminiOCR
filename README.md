@@ -28,10 +28,13 @@ https://ocr.lark.nyc.mn
 
 ## 部署指南
 
-本项目采用Vercel平台进行云端部署，部署前需配置以下环境变量：
+本项目采用Vercel平台进行云端部署，需配置以下环境变量：
 `GEMINI_API_KEY`
 
-[![Vercel部署按钮](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fkayaladream%2FGeminiOCR&env=GEMINI_API_KEY&envDescription=您的Google%20Gemini%20API密钥&project-name=GeminiOCR&repository-name=gemini-ocr)
+**Fork 方案，支持更新**
+1. 先点击 [Fork 原项目](https://github.com/kayaladream/GeminiOCR/fork)  
+2. 然后点击下方按钮部署 **你的 Fork 仓库**：
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
 
 **注意：将Vercel的“函数最大持续时间”调整为300秒，以确保Gemini API有足够的处理时间，避免因超时而中断请求。**
 
