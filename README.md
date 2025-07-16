@@ -28,19 +28,27 @@ https://ocr.lark.nyc.mn
 
 ## 部署指南
 
-本项目采用Vercel平台进行云端部署，需配置以下环境变量：
-`GEMINI_API_KEY`
+本项目采用Vercel平台进行云端部署：
 
 **Fork 方案，支持更新**  
-1. 先点击 GitHub 仓库右上角的 Fork 按钮，或 <a href="https://github.com/kayaladream/GeminiOCR/fork" target="_blank">点我 ↗</a>
-2. 然后点击下方按钮部署 **你的 Fork 仓库**：  
+1. 先点击 GitHub 仓库右上角的 Fork 按钮，将项目复制到你的 GitHub 账户。
+2. 然后点击下方按钮部署你的 Fork 仓库：  
    [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)  
+   环境变量配置：
+   在部署页面填写 `GEMINI_API_KEY`（你的 Google Gemini API 密钥）。
+3. 后续更新原项目的步骤  
+   当原项目更新时，按以下步骤同步你的 Fork 仓库：  
+   **手动同步（推荐）：**  
+   -进入你的 Fork 仓库页面，点击 "Sync fork" → "Update branch"（GitHub 提供的同步按钮）。  
+   -Vercel 会自动检测变更并重新部署。  
+   **自动同步（高级）：**  
+   配置 GitHub Actions 或第三方工具（如 [pull](https://github.com/apps/pull)）自动同步上游更新。
 
 **注意：将Vercel的“函数最大持续时间”调整为300秒，以确保Gemini API有足够的处理时间，避免因超时而中断请求。**  
 
 1. 转到您的Vercel项目  
 2. 打开"Settings"  
-3. 点击"Functions" → "Advanced Settings" → "Function Max Duration"，将值改为300，保存后重新部署。 
+3. 点击"Functions" → "Advanced Settings" → "Function Max Duration"，将值改为300，保存后重新部署。
 
 ## Gemini API密钥获取流程
 
