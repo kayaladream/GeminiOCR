@@ -32,7 +32,7 @@ https://ocr.lark.nyc.mn
 `GEMINI_API_KEY`
 
 **Fork 方案，支持更新**
-1. 先点击 GitHub 仓库右上角的 Fork 按钮，或 [点我](https://github.com/kayaladream/GeminiOCR/fork)  
+1. 先点击 GitHub 仓库右上角的 Fork 按钮，或 <a href="https://github.com/kayaladream/GeminiOCR/fork" target="_blank">点我 ↗</a>
 2. 然后点击下方按钮部署 **你的 Fork 仓库**：
    
     [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new)
