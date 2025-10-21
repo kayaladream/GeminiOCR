@@ -20,6 +20,25 @@
   - 剪贴板粘贴上传
   - 远程URL导入
 
+## 实际效果
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/e8ddd5f4-23f8-41f6-bf81-6a11361d2009" alt="主界面" width="968">
+  <br>
+  <small>手写稿的识别与标记</small>
+</div>
+<br>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/50a5d4a8-b96d-4c74-ad8f-a49768cd8549" alt="主界面" width="968">
+  <br>
+  <small>肉眼根本看不清的英文也能准确识别</small>
+</div>
+<br>
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/8bedc54f-3ae0-4771-8d41-0a876cc840ba" alt="主界面" width="968">
+  <br>
+  <small>表格智能识别并将其他内容单独区分，非基于AI的OCR做不到</small>
+</div>
+
 ## 完全免费
 Vercel平台云端快速部署，使用Google Gemini免费API
 
