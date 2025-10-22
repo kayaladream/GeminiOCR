@@ -39,11 +39,11 @@
   <small>表格智能识别并将其他内容单独区分，非基于AI的OCR做不到</small>
 </div>
 
-## 完全免费
-Vercel平台云端快速部署，使用Google Gemini免费API
-
 ## 演示地址
 https://ocr.lark.nyc.mn
+
+## 完全免费
+Vercel平台云端快速部署，使用Google Gemini免费API
 
 ## 部署指南
 
