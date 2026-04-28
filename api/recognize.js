@@ -39,7 +39,7 @@ const ADVANCED_PROMPT = `
     *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
     *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
     *   CRITICAL: Do NOT wrap standard units, measurements, percentages, or simple symbols in $ or $$. Output them as plain text EXACTLY as they appear in the original image. 
-        - Examples of what NOT to wrap: "90°", "10m²", "120kWh", "100mm", "50%". Output them directly.
+        - Examples of what NOT to wrap: "90°", "200m²", "10kWh", "100mm", "50%", "120km/h", "50kg", "25℃". Output them directly.
     *   Keep variable names from the original text unchanged
 
 2.  **Table Standards:**
@@ -52,13 +52,18 @@ const ADVANCED_PROMPT = `
     *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
     *   If a table is identified, do not ignore the text outside of it.
 
-3.  **Text Recognition Requirements:**
+3.  **Form Elements:**
+    *   Use [ ] for unchecked checkboxes or empty fill-in-the-blank boxes.
+    *   Use [x] for checked checkboxes or selected options.
+
+4.  **Text Recognition Requirements:**
     *   Do not omit any text.
+    *   Strictly transcribe the text in its original language. DO NOT translate any content.
     *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
     *   Technical terms and proper nouns must be accurately recognized.
     *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
 
-4.  **Identifying and Marking Uncertain Items:**
+5.  **Identifying and Marking Uncertain Items:**
     *   For the following situations, **bold** marking must be used:
         - Characters with unclear outlines due to messy handwriting
         - Characters with broken strokes or interference from stains/smudges
@@ -67,7 +72,7 @@ const ADVANCED_PROMPT = `
     *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
     *   For handwritten text, apply a more lenient marking strategy: **bold** any character with blurred or ambiguous strokes.
 
-5.  **Contextual Proofreading and Correction:**
+6.  **Contextual Proofreading and Correction:**
     *   Only correct errors that meet the following criteria:
         - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
         - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
@@ -77,8 +82,9 @@ const ADVANCED_PROMPT = `
     *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
     *   Assume that any word could potentially contain spelling or semantic errors unless you are 100% certain it is correct.
 
-6.  **Output Requirements:**
+7.  **Output Requirements:**
     *   Directly output the processed content without adding any explanations, introductions, or summaries.
+    *   If the image contains absolutely no recognizable text, output exactly "未检测到文本".
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
