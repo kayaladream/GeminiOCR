@@ -181,11 +181,14 @@ function App() {
                 - Format standardization (e.g., converting "2023年1月1日/Jan 1, 2023" to "2023-01-01")  
                 - Synonym substitution (e.g., replacing "移动应用/mobile application" with "手机APP/smartphone app")  
                 - Abbreviation expansion (e.g., expanding "北大/Beida" to "北京大学/Peking University")  
+                - Temporal/Number modification (e.g., altering "2026", "2027" to "2024"). All digits, dates, and years MUST be transcribed EXACTLY as written in the image.
 ﻿
           ## Adhere to the following standards and requirements:
           1.  **Mathematical Formula Standards:**
               *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
               *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+              *   CRITICAL: Do NOT wrap standard units, measurements, percentages, or simple symbols in $ or $$. Output them as plain text EXACTLY as they appear in the original image. 
+                  - Examples of what NOT to wrap: "90°", "200m²", "10kWh", "100mm", "50%", "120km/h", "30kg", "25℃". Output them directly.
               *   Keep variable names from the original text unchanged
 
           2.  **Table Standards:**
@@ -198,13 +201,18 @@ function App() {
               *   Monetary amounts must include currency symbols and decimal points (if present in the original text).
               *   If a table is identified, do not ignore the text outside of it.
 
-          3.  **Text Recognition Requirements:**
+          3.  **Form Elements:**
+              *   Use [ ] for unchecked checkboxes or empty fill-in-the-blank boxes.
+              *   Use [x] for checked checkboxes or selected options.
+
+          4.  **Text Recognition Requirements:**
               *   Do not omit any text.
+              *   Strictly transcribe the text in its original language. DO NOT translate any content.
               *   Maintain the original paragraph structure and general layout (e.g., indentation) as much as possible, but prioritize standard Markdown formatting.
               *   Technical terms and proper nouns must be accurately recognized.
               *   Do not automatically format paragraphs starting with numbers or symbols as ordered or unordered lists. Do not apply any Markdown list formatting unless explicitly indicated in the original text.
 
-          4.  **Identifying and Marking Uncertain Items:**
+          5.  **Identifying and Marking Uncertain Items:**
               *   For the following situations, **bold** marking must be used:
                   - Characters with unclear outlines due to messy handwriting
                   - Characters with broken strokes or interference from stains/smudges
@@ -213,7 +221,7 @@ function App() {
               *   For sequences of 3 or more consecutive low-confidence characters, **bold the entire sequence**.
               *   For handwritten text, apply a more lenient marking strategy: **bold** any character with blurred or ambiguous strokes.
 
-          5.  **Contextual Proofreading and Correction:**
+          6.  **Contextual Proofreading and Correction:**
               *   Only correct errors that meet the following criteria:
                   - Presence of substitutions based on phonetic or visual similarity (e.g., "帐号"→*账号*)
                   - Violations of grammatical collocation or selectional restrictions (e.g., "吃医院"→*去医院*)
@@ -223,8 +231,9 @@ function App() {
               *   Mark the *corrected* text or words with *italics* to clearly indicate modifications.
               *   Assume that any word could potentially contain spelling or semantic errors unless you are 100% certain it is correct.
 
-          6.  **Output Requirements:**
+          7.  **Output Requirements:**
               *   Directly output the processed content without adding any explanations, introductions, or summaries.
+              *   If the image contains absolutely no recognizable text, output exactly "> ⚠️ **系统提示：当前图片未检测到任何可识别的文本。**".
           `;
           const result = await model.generateContentStream([rulesPrompt, imagePart]);
 
@@ -263,7 +272,13 @@ function App() {
 
            if (!response.ok || !response.body) {
              const errorText = await response.text();
-             throw new Error(`API 请求失败，状态码 ${response.status}: ${errorText || '无详细错误信息'}`);
+             let friendlyError = errorText || '无详细错误信息';
+             try {
+               // 尝试解析 JSON，提取出里面干净的 error 信息（比如 "API配额已用完"）
+               const errJson = JSON.parse(errorText);
+               if (errJson.error) friendlyError = errJson.error;
+             } catch (e) {}
+             throw new Error(friendlyError);
            }
 
            const streamReader = response.body.getReader();
@@ -310,7 +325,8 @@ function App() {
         console.error('文件处理或识别出错:', error);
         setResults(prevResults => {
           const newResults = [...prevResults];
-          newResults[index] = `识别出错, 请重试 (${error.message || error})`;
+          // 统一使用 Markdown 的引用块和加粗格式
+          newResults[index] = `> ⚠️ **系统提示：图片处理失败**\n>\n> ${error.message || error}`;
           return newResults;
         });
         setIsStreaming(false);
