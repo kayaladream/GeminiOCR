@@ -859,7 +859,12 @@ function App() {
                 )}
 
                 {!isLoading && !isStreaming && results[currentIndex] == null && images.length > 0 && (
-                    <div className="result-placeholder">当前图片无识别结果或识别失败。</div>
+                    <div className="result-placeholder">
+                        <span style={{ fontSize: '1.1em', fontWeight: 'bold' }}>⚠️ 系统提示</span>
+                        <br />
+                        <br />
+                        当前图片状态异常，暂无识别结果或由于网络中断导致失败，请尝试重新点击上传。
+                    </div>
                 )}
             </div>
           </div>
