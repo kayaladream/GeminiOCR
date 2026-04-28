@@ -378,10 +378,13 @@ function App() {
         while (activePromises < maxConcurrent && queue.length > 0) {
           const [originalIndex, item] = queue.shift();
           activePromises++;
+
+          // eslint-disable-next-line no-loop-func
           const promise = processor(item, originalIndex)
             .catch(err => {
               console.error(`处理项目 ${originalIndex} 时出错:`, err);
             })
+            // eslint-disable-next-line no-loop-func
             .finally(() => {
               activePromises--;
               executing.delete(promise);
