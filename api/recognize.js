@@ -32,11 +32,14 @@ const ADVANCED_PROMPT = `
       - Format standardization (e.g., converting "2023年1月1日/Jan 1, 2023" to "2023-01-01")  
       - Synonym substitution (e.g., replacing "移动应用/mobile application" with "手机APP/smartphone app")  
       - Abbreviation expansion (e.g., expanding "北大/Beida" to "北京大学/Peking University")  
+      - Temporal/Number modification (e.g., altering "2026", "2027" to "2024"). All digits, dates, and years MUST be transcribed EXACTLY as written in the image.
 ﻿
 ## Adhere to the following standards and requirements:
 1.  **Mathematical Formula Standards:**
     *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
     *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
+    *   CRITICAL: Do NOT wrap standard units, measurements, percentages, or simple symbols in $ or $$. Output them as plain text EXACTLY as they appear in the original image. 
+        - Examples of what NOT to wrap: "90°", "10m²", "120kWh", "100mm", "50%". Output them directly.
     *   Keep variable names from the original text unchanged
 
 2.  **Table Standards:**
