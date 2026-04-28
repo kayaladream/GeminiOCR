@@ -39,7 +39,7 @@ const ADVANCED_PROMPT = `
     *   Use $$ for standalone mathematical formulas, e.g., $$E = mc^2$$
     *   Use $ for inline mathematical formulas, e.g., the energy formula $E = mc^2$
     *   CRITICAL: Do NOT wrap standard units, measurements, percentages, or simple symbols in $ or $$. Output them as plain text EXACTLY as they appear in the original image. 
-        - Examples of what NOT to wrap: "90°", "200m²", "10kWh", "100mm", "50%", "120km/h", "50kg", "25℃". Output them directly.
+        - Examples of what NOT to wrap: "90°", "200m²", "10kWh", "100mm", "50%", "120km/h", "30kg", "25℃". Output them directly.
     *   Keep variable names from the original text unchanged
 
 2.  **Table Standards:**
@@ -84,7 +84,7 @@ const ADVANCED_PROMPT = `
 
 7.  **Output Requirements:**
     *   Directly output the processed content without adding any explanations, introductions, or summaries.
-    *   If the image contains absolutely no recognizable text, output exactly "未检测到文本".
+    *   If the image contains absolutely no recognizable text, output exactly "> ⚠️ **系统提示：当前图片未检测到任何可识别的文本。**".
 `;
 
 const VALID_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
