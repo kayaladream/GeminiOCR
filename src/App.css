@@ -212,7 +212,6 @@ header p {
   font-size: 1.1rem;
 }
 
-/* ===== 核心修复区域：结果面板容器 ===== */
 .result-container {
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
@@ -222,12 +221,10 @@ header p {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 113, 227, 0.1);
   transition: none;
-  
-  /* 修复上次超出一截的元凶：强制内部盒子模型，让内边距不算入总高度 */
-  box-sizing: border-box; 
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* 隐藏所有溢出边界的内容 */
+  overflow-y: auto;
+  max-height: 100%;
+  height: auto;
+  scroll-behavior: smooth;
 }
 
 .result-container:hover {
@@ -242,19 +239,12 @@ header p {
   padding: 2rem 0;
 }
 
-/* 编辑区外层包裹容器 */
 .result-text {
   line-height: 1.6;
   color: #1d1d1f;
   width: 100%;
   padding: 0 0 1rem 0;
   transition: none;
-  
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0; /* 允许压缩，是开启滚动的核心 */
 }
 
 .result-text .result-header {
@@ -306,17 +296,12 @@ header p {
   line-height: 1.8;
 }
 
-/* 识别过程中的流式文字也加上自适应高度和滚动 */
 .gradient-text {
   color: #1d1d1f;
   position: relative;
+  min-height: 50px;
   font-size: 1.1rem;
   font-family: "微软雅黑", serif;
-  box-sizing: border-box;
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  padding-right: 5px;
 }
 
 .gradient-text > div {
@@ -524,7 +509,16 @@ main.has-content {
   opacity: 0;
   animation: fadeIn 0.5s ease-out forwards;
   animation-delay: 0.2s;
-  /* 移除原本干扰布局的代码 */
+  max-height: calc(80vh-90px);
+  position: sticky;
+  top: 2rem;
+  align-self: stretch;
+}
+
+.result-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .upload-section.with-image .upload-zone {
@@ -546,14 +540,12 @@ main.has-content {
     max-width: 600px;
   }
   .result-section {
+    max-height: 60vh;
     position: relative;
+    top: 0;
     width: 100%;
     max-width: 600px;
     margin-top: 2rem;
-  }
-  .result-container {
-    height: auto;
-    max-height: 60vh;
   }
 }
 
@@ -879,11 +871,10 @@ main.has-content {
   -webkit-text-fill-color: inherit !important;
 }
 
-/* 文字编辑输入框的终极设置：完美向下填充 + 滚动 */
 .edit-content-editable {
   width: 100%;
-  flex: 1;
-  min-height: 0;
+  min-height: 400px;
+  max-height: calc(80vh - 150px);
   overflow-y: auto;
   font-size: 1.13rem;
   font-family: "微软雅黑", serif;
@@ -891,8 +882,7 @@ main.has-content {
   border: 1px solid #ced4da;
   border-radius: 8px;
   padding: 15px;
-  
-  box-sizing: border-box; /* 这个非常关键，确保Padding不把高度挤破 */
+  box-sizing: border-box;
   margin-top: 1rem;
   background-color: #f8f9fa;
   color: #212529;
@@ -975,22 +965,4 @@ main.has-content {
   color: #86868b;
   padding: 2rem;
   font-style: italic;
-}
-
-/* 仅针对电脑端生效的强制等高魔法代码 */
-@media (min-width: 993px) {
-  /* 让右侧区域变成一个绝对定位参照物，并拉伸到和左边完全一样的真实高度 */
-  .result-section {
-    align-self: stretch; 
-    position: relative; 
-  }
-  
-  /* 框体直接用绝对定位 100% 贴在参照物上（因为配合了 border-box 所以连1px都不会多） */
-  .result-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-  }
 }
