@@ -64,7 +64,7 @@ body {
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
-  zoom: 0.93;
+  zoom: 0.92;
 }
 
 body::before {
