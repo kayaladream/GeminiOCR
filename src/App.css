@@ -221,10 +221,12 @@ header p {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(0, 113, 227, 0.1);
   transition: none;
-  overflow-y: auto;
+  overflow: hidden;
   max-height: 100%;
-  height: auto;
+  height: 100%;
   scroll-behavior: smooth;
+  display: flex;
+  flex-direction: column;
 }
 
 .result-container:hover {
@@ -245,6 +247,10 @@ header p {
   width: 100%;
   padding: 0 0 1rem 0;
   transition: none;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .result-text .result-header {
@@ -299,9 +305,12 @@ header p {
 .gradient-text {
   color: #1d1d1f;
   position: relative;
-  min-height: 50px;
   font-size: 1.1rem;
   font-family: "微软雅黑", serif;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 5px;
 }
 
 .gradient-text > div {
@@ -509,10 +518,8 @@ main.has-content {
   opacity: 0;
   animation: fadeIn 0.5s ease-out forwards;
   animation-delay: 0.2s;
-  max-height: calc(80vh-90px);
-  position: sticky;
-  top: 2rem;
   align-self: stretch;
+  position: relative;
 }
 
 .result-container {
@@ -873,8 +880,8 @@ main.has-content {
 
 .edit-content-editable {
   width: 100%;
-  min-height: 400px;
-  max-height: calc(80vh - 150px);
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   font-size: 1.13rem;
   font-family: "微软雅黑", serif;
@@ -965,4 +972,15 @@ main.has-content {
   color: #86868b;
   padding: 2rem;
   font-style: italic;
+}
+
+/* 针对桌面的绝对定位技巧，强制让其高度严格匹配左侧栏 */
+@media (min-width: 993px) {
+  .result-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+  }
 }
